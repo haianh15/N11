@@ -31,7 +31,12 @@ import {
   PaymentReceipt,
   DebtHistoryReminder,
   DebtPromise,
-  Asset
+  Asset,
+  MissingConditionLog,
+  UnfinishedHandoverLog,
+  InitialPaymentRecord,
+  LeaseStartEvent,
+  ManagementReportSnapshot
 } from '../types';
 
 import {
@@ -55,7 +60,12 @@ import {
   INITIAL_DEBT_REMINDERS,
   INITIAL_DEBT_PROMISES,
   INITIAL_RETURN_INSPECTIONS,
-  INITIAL_SETTLEMENT_SLIPS
+  INITIAL_SETTLEMENT_SLIPS,
+  INITIAL_ROOM_HISTORY,
+  INITIAL_INITIAL_PAYMENT_RECORDS,
+  INITIAL_MISSING_CONDITION_LOGS,
+  INITIAL_UNFINISHED_HANDOVER_LOGS,
+  INITIAL_LEASE_START_EVENTS
 } from '../data/seedData';
 
 interface AppContextType {
@@ -85,8 +95,12 @@ interface AppContextType {
   roomHistory: RoomHistoryLog[];
   returnPlans: ReturnPlanLog[];
   contactLogs: TenantContactLog[];
-  addRoom: (roomCode: string, floor: number, area: number, note?: string) => { success: boolean; message: string };
-  updateRoom: (roomCode: string, floor: number, area: number, note?: string) => { success: boolean; message: string };
+  initialPaymentRecords: InitialPaymentRecord[];
+  missingConditionLogs: MissingConditionLog[];
+  unfinishedHandoverLogs: UnfinishedHandoverLog[];
+  leaseStartEvents: LeaseStartEvent[];
+  addRoom: (roomCode: string, floor: number, area: number, note?: string) => { success: boolean; message: string; field?: string; code?: string; room?: Room };
+  updateRoom: (roomCode: string, floor: number, area: number, note?: string) => { success: boolean; message: string; field?: string; code?: string; room?: Room };
   recordInitialPaymentPH07: (params: {
     roomCode: string;
     leaseId: string;
@@ -99,7 +113,19 @@ interface AppContextType {
     bankAccountReceived: string;
     proofFile?: string;
   }) => { success: boolean; message: string };
-  confirmCheckInPH05: (roomCode: string, leaseId: string, actualCheckInDate: string) => { success: boolean; message: string };
+  correctInitialPaymentPH07: (id: string, reason: string, updatedFields: Partial<InitialPaymentRecord>) => { success: boolean; message: string };
+  confirmCheckInPH05: (roomCode: string, leaseId: string, actualCheckInDate: string, handoverReportId?: string, handoverVersion?: string) => { success: boolean; message: string };
+  saveMissingConditionPH06: (params: {
+    roomCode: string;
+    contractId: string;
+    leaseId: string;
+    missingContractEffect: boolean;
+    missingHandover: boolean;
+    notes: string;
+    isTenantStoppedProcedure?: boolean;
+    tenantStopReason?: string;
+    tenantStopContent?: string;
+  }) => { success: boolean; message: string };
   updateExpectedReturnDatePH11_12: (params: {
     roomCode: string;
     leaseId: string;
@@ -117,8 +143,27 @@ interface AppContextType {
     contactResult: 'Chưa phản hồi' | 'Không tiếp tục thuê – Chưa xác nhận ngày dự kiến trả' | 'Chờ đối chiếu' | 'Đồng ý tiếp tục thuê';
     content: string;
     nextContactDate?: string;
+    isAppointmentOnly?: boolean;
+    contactChannelSource?: 'UC-PH-13' | 'UC-BG09' | 'UC-PH-09';
+  }) => { success: boolean; message: string; logId?: string; isConflict?: boolean };
+  autoCancelReturnPlanPH14: (roomCode: string, renewalContractId?: string) => { success: boolean; message: string };
+  checkExtensionResultPH15: (roomCode: string) => {
+    result: 'Có bằng chứng hợp lệ về việc tiếp tục thuê' | 'Chưa có căn cứ';
+    caseType: 'Trường hợp 01' | 'Trường hợp 02' | 'Trường hợp 03';
+    reason: string;
+    activeContract?: Contract;
+    renewalContract?: Contract;
+  };
+  confirmReturnStep305AndVacantPH08: (roomCode: string, leaseId: string, actualReturnDate?: string) => { success: boolean; message: string };
+  saveUnfinishedHandoverPH09: (params: {
+    roomCode: string;
+    leaseId: string;
+    contractId: string;
+    handoverVersion: string;
+    reason: string;
+    obstacleContent: string;
+    existingId?: string;
   }) => { success: boolean; message: string };
-  confirmReturnStep305AndVacantPH08: (roomCode: string, leaseId: string) => { success: boolean; message: string };
 
   // Handover & Assets (QT02)
   standardAssets: Asset[];
@@ -195,12 +240,16 @@ interface AppContextType {
   // Debts (QT09)
   debtReminders: DebtHistoryReminder[];
   debtPromises: DebtPromise[];
-  recordDebtReminder09_2: (reminder: Omit<DebtHistoryReminder, 'id' | 'loggedAt' | 'loggedBy'>) => void;
-  recordDebtPromise09_3: (promise: Omit<DebtPromise, 'id' | 'loggedAt' | 'loggedBy'>) => void;
+  recordDebtReminder09_2: (reminder: Omit<DebtHistoryReminder, 'id' | 'loggedAt' | 'loggedBy'>) => { success: boolean; message: string; record?: DebtHistoryReminder };
+  recordDebtPromise09_3: (promise: Omit<DebtPromise, 'id' | 'loggedAt' | 'loggedBy'>) => { success: boolean; message: string; record?: DebtPromise };
 
   // Security Audit Log
   securityLogs: SecurityAuditLog[];
   logSecurity: (action: string, details: string) => void;
+
+  // Management Reports (QT10)
+  reportSnapshots: ManagementReportSnapshot[];
+  saveReportSnapshot: (snapshot: ManagementReportSnapshot) => void;
 
   // Quick reset for demo/testing
   resetAllToSeedData: () => void;
@@ -251,9 +300,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [batchSchedules, setBatchSchedules] = useState<BatchSchedule[]>(() => getStored('batchSchedules', INITIAL_BATCH_SCHEDULES));
   const [standardAssets] = useState<Asset[]>(INITIAL_STANDARD_ASSETS);
   const [rooms, setRooms] = useState<Room[]>(() => getStored('rooms', INITIAL_ROOMS));
-  const [roomHistory, setRoomHistory] = useState<RoomHistoryLog[]>(() => getStored('roomHistory', []));
+  const [roomHistory, setRoomHistory] = useState<RoomHistoryLog[]>(() => getStored('roomHistory', INITIAL_ROOM_HISTORY));
   const [returnPlans, setReturnPlans] = useState<ReturnPlanLog[]>(() => getStored('returnPlans', []));
   const [contactLogs, setContactLogs] = useState<TenantContactLog[]>(() => getStored('contactLogs', []));
+  const [initialPaymentRecords, setInitialPaymentRecords] = useState<InitialPaymentRecord[]>(() => getStored('initialPaymentRecords', INITIAL_INITIAL_PAYMENT_RECORDS));
+  const [missingConditionLogs, setMissingConditionLogs] = useState<MissingConditionLog[]>(() => getStored('missingConditionLogs', INITIAL_MISSING_CONDITION_LOGS));
+  const [unfinishedHandoverLogs, setUnfinishedHandoverLogs] = useState<UnfinishedHandoverLog[]>(() => getStored('unfinishedHandoverLogs', INITIAL_UNFINISHED_HANDOVER_LOGS));
+  const [leaseStartEvents, setLeaseStartEvents] = useState<LeaseStartEvent[]>(() => getStored('leaseStartEvents', INITIAL_LEASE_START_EVENTS));
 
   const [inventoryRecords, setInventoryRecords] = useState<InventoryRecord[]>(() => getStored('inventoryRecords', INITIAL_INVENTORY_RECORDS));
   const [handoverReports, setHandoverReports] = useState<HandoverReport[]>(() => getStored('handoverReports', INITIAL_HANDOVER_REPORTS));
@@ -277,8 +330,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [debtReminders, setDebtReminders] = useState<DebtHistoryReminder[]>(() => getStored('debtReminders', INITIAL_DEBT_REMINDERS));
   const [debtPromises, setDebtPromises] = useState<DebtPromise[]>(() => getStored('debtPromises', INITIAL_DEBT_PROMISES));
   const [securityLogs, setSecurityLogs] = useState<SecurityAuditLog[]>(() => getStored('securityLogs', []));
+  const [reportSnapshots, setReportSnapshots] = useState<ManagementReportSnapshot[]>(() => getStored('reportSnapshots', [
+    {
+      id: 'snap_demo_01',
+      reportCode: 'BCQT-202610-01',
+      createdAt: '2026-10-15 17:30',
+      createdBy: 'Quản lý Nguyễn Văn An',
+      asOfTimestamp: '15/10/2026 17:30:00',
+      periodLabel: 'Kỳ tháng 10/2026',
+      sourceVersion: 'ASIS-01 v2.4 (Chốt kỳ 10/2026)',
+      roomStats: {
+        totalRooms: 12,
+        vacantRooms: 2,
+        rentedRooms: 8,
+        returningRooms: 2,
+        occupancyRate: 83.3,
+        roomsSnapshot: [
+          { roomCode: 'P.101', status: 'Đang thuê', hasDeposit: true, expectedReturnDate: '2026-12-31' },
+          { roomCode: 'P.102', status: 'Trống', hasDeposit: false },
+          { roomCode: 'P.103', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.201', status: 'Sắp trả', hasDeposit: true, expectedReturnDate: '2026-10-25' },
+          { roomCode: 'P.202', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.203', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.301', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.302', status: 'Trống', hasDeposit: true },
+          { roomCode: 'P.303', status: 'Sắp trả', hasDeposit: true, expectedReturnDate: '2026-10-20' },
+          { roomCode: 'P.401', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.402', status: 'Đang thuê', hasDeposit: true },
+          { roomCode: 'P.403', status: 'Đang thuê', hasDeposit: true }
+        ]
+      },
+      financialStats: {
+        totalReceivable: 45500000,
+        totalCollected: 38200000,
+        totalHandledByDeposit: 2500000,
+        totalUncollected: 4800000,
+        totalOverdueDebt: 3100000,
+        initialRentTotal: 7000000,
+        nextRentTotal: 31500000,
+        utilityFeesTotal: 7000000,
+        depositHoldingTotal: 42000000
+      },
+      reconciliationStatus: 'Đã kiểm tra',
+      reconciledAt: '15/10/2026 17:25',
+      reconciledBy: 'Quản lý Nguyễn Văn An'
+    }
+  ]));
 
   // Sync state to local storage on changes
+  useEffect(() => { setStored('reportSnapshots', reportSnapshots); }, [reportSnapshots]);
   useEffect(() => { setStored('users', users); }, [users]);
   useEffect(() => { setStored('currentUser', currentUser); }, [currentUser]);
   useEffect(() => { setStored('services', services); }, [services]);
@@ -288,6 +388,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { setStored('roomHistory', roomHistory); }, [roomHistory]);
   useEffect(() => { setStored('returnPlans', returnPlans); }, [returnPlans]);
   useEffect(() => { setStored('contactLogs', contactLogs); }, [contactLogs]);
+  useEffect(() => { setStored('initialPaymentRecords', initialPaymentRecords); }, [initialPaymentRecords]);
+  useEffect(() => { setStored('missingConditionLogs', missingConditionLogs); }, [missingConditionLogs]);
+  useEffect(() => { setStored('unfinishedHandoverLogs', unfinishedHandoverLogs); }, [unfinishedHandoverLogs]);
+  useEffect(() => { setStored('leaseStartEvents', leaseStartEvents); }, [leaseStartEvents]);
   useEffect(() => { setStored('inventoryRecords', inventoryRecords); }, [inventoryRecords]);
   useEffect(() => { setStored('handoverReports', handoverReports); }, [handoverReports]);
   useEffect(() => { setStored('incidents', incidents); }, [incidents]);
@@ -648,23 +752,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  // ==================== ROOM METHODS (QT01) ====================
+  // ==================== ROOM METHODS (QT01: UC-PH-01 -> UC-PH-15) ====================
+  // UC-PH-02: Thêm phòng mới
   const addRoom = (roomCode: string, floor: number, area: number, note?: string) => {
-    const code = roomCode.trim();
-    if (!code) return { success: false, message: 'Mã phòng là trường bắt buộc.' };
-    if (rooms.some(r => r.roomCode.toLowerCase() === code.toLowerCase())) {
-      return { success: false, message: 'Mã phòng không hợp lệ hoặc đã tồn tại' };
+    // Kiểm tra phiên đăng nhập và quyền (EF-03)
+    if (!currentUser || !currentSession || currentSession.expiresAt < Date.now()) {
+      return { success: false, message: 'Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.', code: 'EF-03' };
     }
-    if (floor < 0 || !Number.isInteger(floor)) {
-      return { success: false, message: 'Tầng phải là số nguyên từ 0 trở lên.' };
-    }
-    if (area <= 0) {
-      return { success: false, message: 'Diện tích phải là số dương lớn hơn 0.' };
-    }
-    if (note && note.length > 500) {
-      return { success: false, message: 'Ghi chú không được vượt quá 500 ký tự.' };
+    if (currentUser.role !== 'Chủ nhà' && currentUser.role !== 'Quản lý') {
+      return { success: false, message: 'Chức năng chỉ dành cho User có vai trò Quản lý hoặc Chủ nhà.', code: 'EF-03' };
     }
 
+    // BR-UC.PH.02-01: Mã phòng sau khi bỏ khoảng trắng đầu/cuối phải có nội dung và duy nhất
+    const code = (roomCode || '').trim();
+    if (!code) {
+      return { success: false, message: 'Mã phòng không hợp lệ hoặc đã tồn tại', field: 'roomCode', code: 'EF-02' };
+    }
+    if (rooms.some(r => r.roomCode.toLowerCase() === code.toLowerCase())) {
+      return { success: false, message: 'Mã phòng không hợp lệ hoặc đã tồn tại', field: 'roomCode', code: 'EF-02' };
+    }
+
+    // BR-UC.PH.02-02 & EF-01: Tầng là số nguyên từ 0 trở lên
+    if (floor === undefined || isNaN(floor) || floor < 0 || !Number.isInteger(floor)) {
+      return { success: false, message: 'Tầng trống hoặc sai định dạng (phải là số nguyên từ 0 trở lên).', field: 'floor', code: 'EF-01' };
+    }
+
+    // BR-UC.PH.02-02 & EF-01: Diện tích là số dương > 0
+    if (area === undefined || isNaN(area) || area <= 0) {
+      return { success: false, message: 'Diện tích trống hoặc không lớn hơn 0 (phải là số dương).', field: 'area', code: 'EF-01' };
+    }
+
+    // BR-UC.PH.02-02 & EF-02: Ghi chú không bắt buộc và không quá 500 ký tự
+    const trimmedNote = (note || '').trim();
+    if (trimmedNote.length > 500) {
+      return { success: false, message: 'Ghi chú vượt 500 ký tự. Vui lòng sửa trước khi lưu.', field: 'note', code: 'EF-02' };
+    }
+
+    const now = new Date().toISOString();
+    const user = currentUser?.fullName || 'Chủ nhà';
+
+    // BR-UC.PH.02-03 & BR-UC.PH.02-04: Khởi tạo phòng trạng thái Trống, không tự có khách thuê, hợp đồng, cọc hoặc ngày dự kiến trả
     const newRoom: Room = {
       id: 'rm_' + Date.now(),
       roomCode: code,
@@ -675,47 +802,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       firstMonthRentPaid: false,
       firstMonthPeriod: '',
       totalOccupants: 0,
-      note: note || ''
+      note: trimmedNote
+    };
+
+    // BR-UC.PH.02-05: Tạo phòng phải lưu trọn vẹn, ghi vết khởi tạo cùng giao dịch
+    const initLog: RoomHistoryLog = {
+      id: 'rl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      roomCode: code,
+      field: 'Khởi tạo phòng',
+      oldValue: '—',
+      newValue: `Khởi tạo phòng mới: Tầng ${floor}, ${area} m² (Trạng thái: Trống)`,
+      changedBy: user,
+      changedAt: now
     };
 
     setRooms(prev => [...prev, newRoom]);
-    logSecurity('ROOM_CREATED', `Created room ${code}`);
-    return { success: true, message: 'Thêm phòng thành công' };
+    setRoomHistory(prev => [initLog, ...prev]);
+    logSecurity('ROOM_CREATED', `Tạo phòng ${code} - Tầng ${floor}, ${area}m² bởi ${user}`);
+
+    return { success: true, message: 'Thêm phòng thành công', room: newRoom };
   };
 
+  // UC-PH-02: Cập nhật thông tin phòng đã có
   const updateRoom = (roomCode: string, floor: number, area: number, note?: string) => {
-    const room = rooms.find(r => r.roomCode === roomCode);
-    if (!room) return { success: false, message: 'Không tìm thấy phòng.' };
-    if (floor < 0 || !Number.isInteger(floor)) {
-      return { success: false, message: 'Tầng phải là số nguyên từ 0 trở lên.' };
+    // Kiểm tra phiên đăng nhập và quyền (EF-03)
+    if (!currentUser || !currentSession || currentSession.expiresAt < Date.now()) {
+      return { success: false, message: 'Phiên đăng nhập đã hết hiệu lực. Vui lòng đăng nhập lại.', code: 'EF-03' };
     }
-    if (area <= 0) {
-      return { success: false, message: 'Diện tích phải là số dương lớn hơn 0.' };
-    }
-    if (note && note.length > 500) {
-      return { success: false, message: 'Ghi chú không được vượt quá 500 ký tự.' };
+    if (currentUser.role !== 'Chủ nhà' && currentUser.role !== 'Quản lý') {
+      return { success: false, message: 'Chức năng chỉ dành cho User có vai trò Quản lý hoặc Chủ nhà.', code: 'EF-03' };
     }
 
+    const room = rooms.find(r => r.roomCode === roomCode);
+    if (!room) {
+      return { success: false, message: 'Không tìm thấy phòng tương ứng.', code: 'NOT_FOUND' };
+    }
+
+    // BR-UC.PH.02-02 & EF-01: Tầng là số nguyên từ 0 trở lên
+    if (floor === undefined || isNaN(floor) || floor < 0 || !Number.isInteger(floor)) {
+      return { success: false, message: 'Tầng trống hoặc sai định dạng (phải là số nguyên từ 0 trở lên).', field: 'floor', code: 'EF-01' };
+    }
+
+    // BR-UC.PH.02-02 & EF-01: Diện tích là số dương > 0
+    if (area === undefined || isNaN(area) || area <= 0) {
+      return { success: false, message: 'Diện tích trống hoặc không lớn hơn 0 (phải là số dương).', field: 'area', code: 'EF-01' };
+    }
+
+    // BR-UC.PH.02-02 & EF-02: Ghi chú không bắt buộc và không quá 500 ký tự
+    const trimmedNote = (note !== undefined ? note : (room.note || '')).trim();
+    if (trimmedNote.length > 500) {
+      return { success: false, message: 'Ghi chú vượt 500 ký tự. Vui lòng sửa trước khi lưu.', field: 'note', code: 'EF-02' };
+    }
+
+    // BR-UC.PH.02-05: Cập nhật phòng và lưu vết thay đổi phải diễn ra cùng giao dịch
     const logs: RoomHistoryLog[] = [];
     const now = new Date().toISOString();
     const user = currentUser?.fullName || 'Chủ nhà';
 
     if (room.floor !== floor) {
-      logs.push({ id: 'rl_' + Math.random(), roomCode, field: 'Tầng', oldValue: String(room.floor), newValue: String(floor), changedBy: user, changedAt: now });
+      logs.push({
+        id: 'rl_' + Date.now() + '_fl',
+        roomCode,
+        field: 'Tầng',
+        oldValue: `Tầng ${room.floor}`,
+        newValue: `Tầng ${floor}`,
+        changedBy: user,
+        changedAt: now
+      });
     }
     if (room.area !== area) {
-      logs.push({ id: 'rl_' + Math.random(), roomCode, field: 'Diện tích', oldValue: String(room.area), newValue: String(area), changedBy: user, changedAt: now });
+      logs.push({
+        id: 'rl_' + Date.now() + '_ar',
+        roomCode,
+        field: 'Diện tích',
+        oldValue: `${room.area} m²`,
+        newValue: `${area} m²`,
+        changedBy: user,
+        changedAt: now
+      });
     }
-    if (room.note !== note) {
-      logs.push({ id: 'rl_' + Math.random(), roomCode, field: 'Ghi chú', oldValue: room.note || '', newValue: note || '', changedBy: user, changedAt: now });
+    const currentNoteTrimmed = (room.note || '').trim();
+    if (currentNoteTrimmed !== trimmedNote) {
+      logs.push({
+        id: 'rl_' + Date.now() + '_nt',
+        roomCode,
+        field: 'Ghi chú',
+        oldValue: currentNoteTrimmed || '(Trống)',
+        newValue: trimmedNote || '(Trống)',
+        changedBy: user,
+        changedAt: now
+      });
     }
 
-    setRooms(prev => prev.map(r => r.roomCode === roomCode ? { ...r, floor, area, note: note || '' } : r));
-    if (logs.length > 0) setRoomHistory(prev => [...logs, ...prev]);
+    const updatedRoom: Room = {
+      ...room,
+      floor,
+      area,
+      note: trimmedNote
+    };
 
-    return { success: true, message: 'Cập nhật thông tin phòng thành công' };
+    setRooms(prev => prev.map(r => r.roomCode === roomCode ? updatedRoom : r));
+    if (logs.length > 0) {
+      setRoomHistory(prev => [...logs, ...prev]);
+    }
+
+    logSecurity('ROOM_UPDATED', `Cập nhật phòng ${roomCode}: Tầng ${floor}, ${area}m² bởi ${user}`);
+    return { success: true, message: 'Cập nhật thông tin phòng thành công', room: updatedRoom };
   };
 
+  // UC-PH-07: Ghi nhận hoàn tất một tháng tiền cọc và một tháng tiền thuê đầu
   const recordInitialPaymentPH07 = (params: {
     roomCode: string;
     leaseId: string;
@@ -728,51 +923,134 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     bankAccountReceived: string;
     proofFile?: string;
   }) => {
-    const totalRequired = params.depositAmount + params.firstMonthRentAmount;
-    if (params.actualAmount !== totalRequired) {
-      return { success: false, message: `Số tiền thực nhận (${params.actualAmount.toLocaleString('vi-VN')} đ) không khớp tổng 1 tháng cọc + 1 tháng tiền thuê (${totalRequired.toLocaleString('vi-VN')} đ).` };
+    // BR-UC.PH.07-04: Hợp đồng gia hạn không thu cọc mới
+    const targetContract = contracts.find(c => c.id === params.contractId);
+    if (targetContract && targetContract.contractType === 'Hợp đồng nối tiếp') {
+      return { success: false, message: 'Hợp đồng nối tiếp kế thừa cọc gốc từ hợp đồng đầu, không thu cọc ban đầu mới (BR-UC.PH.07-04).' };
     }
 
+    // BR-UC.PH.07-01: Đúng đủ 1 tháng cọc + 1 tháng thuê đầu
+    const totalRequired = params.depositAmount + params.firstMonthRentAmount;
+    if (params.actualAmount !== totalRequired) {
+      return {
+        success: false,
+        message: `EF-01: Số tiền thực nhận (${params.actualAmount.toLocaleString('vi-VN')} đ) không khớp tổng 1 tháng cọc + 1 tháng tiền thuê (${totalRequired.toLocaleString('vi-VN')} đ). Không xác nhận và không cho nhận phòng.`
+      };
+    }
+
+    // Check duplicate transaction code
+    if (initialPaymentRecords.some(p => p.transactionCode === params.transactionCode)) {
+      return { success: false, message: 'Mã giao dịch đã tồn tại trên hệ thống. Vui lòng kiểm tra lại để tránh ghi trùng (AF-02).' };
+    }
+
+    const depositCode = 'COC-' + params.roomCode.replace(/[^0-9a-zA-Z]/g, '') + '-L1';
+    const rentPeriodNote = targetContract?.batchCode ? `Kỳ thuê đầu (${targetContract.batchCode})` : 'Kỳ thuê đầu';
+
+    const newPaymentRecord: InitialPaymentRecord = {
+      id: 'pay07_' + Date.now(),
+      contractId: params.contractId,
+      roomCode: params.roomCode,
+      leaseId: params.leaseId,
+      depositAmount: params.depositAmount,
+      firstMonthRentAmount: params.firstMonthRentAmount,
+      actualAmount: params.actualAmount,
+      receivedDate: params.receivedDate,
+      transactionCode: params.transactionCode,
+      bankAccountReceived: params.bankAccountReceived,
+      proofFile: params.proofFile,
+      depositCode,
+      rentPeriodNote,
+      confirmedBy: currentUser?.fullName || 'Chủ nhà',
+      confirmedAt: new Date().toISOString()
+    };
+
+    setInitialPaymentRecords(prev => [newPaymentRecord, ...prev]);
+
+    // Cập nhật hợp đồng
     setContracts(prev => prev.map(c => c.id === params.contractId ? {
       ...c,
-      firstMonthRentPaid: true
+      firstMonthRentPaid: true,
+      initialDepositCode: depositCode
     } : c));
 
+    // Cập nhật phòng
     setRooms(prev => prev.map(r => r.roomCode === params.roomCode ? {
       ...r,
       hasDeposit: true,
-      firstMonthRentPaid: true
+      firstMonthRentPaid: true,
+      firstMonthPeriod: rentPeriodNote
     } : r));
 
-    logSecurity('PH07_PAYMENT_RECORDED', `Room ${params.roomCode} recorded deposit & 1st month rent via txn ${params.transactionCode}`);
-    return { success: true, message: 'Ghi nhận hoàn tất một tháng tiền cọc và một tháng tiền thuê đầu thành công!' };
+    logSecurity('PH07_PAYMENT_RECORDED', `Room ${params.roomCode} recorded deposit (${params.depositAmount}) & 1st rent (${params.firstMonthRentAmount}) via txn ${params.transactionCode}`);
+    return { success: true, message: 'Ghi nhận hoàn tất một tháng tiền cọc và một tháng tiền thuê đầu thành công! Đã lưu 2 dòng riêng biệt.' };
   };
 
-  const confirmCheckInPH05 = (roomCode: string, leaseId: string, actualCheckInDate: string) => {
+  // UC-PH-07 AF-03: Đính chính thông tin chứng cứ chuyển khoản có lịch sử
+  const correctInitialPaymentPH07 = (id: string, reason: string, updatedFields: Partial<InitialPaymentRecord>) => {
+    if (!reason.trim()) {
+      return { success: false, message: 'Vui lòng nhập lý do đính chính thông tin.' };
+    }
+    const record = initialPaymentRecords.find(p => p.id === id);
+    if (!record) return { success: false, message: 'Không tìm thấy bản ghi thanh toán.' };
+
+    const correctionHistory = record.correctionHistory || [];
+    const now = new Date().toISOString();
+    const user = currentUser?.fullName || 'Chủ nhà';
+
+    const historyItems = Object.entries(updatedFields).map(([k, v]) => ({
+      field: k,
+      oldVal: String((record as any)[k] || ''),
+      newVal: String(v || ''),
+      reason,
+      correctedBy: user,
+      correctedAt: now
+    }));
+
+    setInitialPaymentRecords(prev => prev.map(p => p.id === id ? {
+      ...p,
+      ...updatedFields,
+      // Không cho sửa đổi số tiền cọc gốc tùy tiện theo BR-UC.PH.07-06
+      depositAmount: record.depositAmount,
+      correctionHistory: [...correctionHistory, ...historyItems]
+    } : p));
+
+    logSecurity('PH07_CORRECTION', `Payment ${id} corrected by ${user}: ${reason}`);
+    return { success: true, message: 'Đính chính thông tin chứng từ thành công! Lịch sử đã được ghi nhận.' };
+  };
+
+  // UC-PH-05: Kiểm tra điều kiện nhận phòng & xác nhận hoàn tất nhận phòng
+  const confirmCheckInPH05 = (roomCode: string, leaseId: string, actualCheckInDate: string, handoverReportId?: string, handoverVersion?: string) => {
     const room = rooms.find(r => r.roomCode === roomCode);
-    const contract = contracts.find(c => c.leaseId === leaseId);
-    const report = handoverReports.find(h => h.leaseId === leaseId && h.status === 'Đã xác nhận');
+    const contract = contracts.find(c => c.leaseId === leaseId) || contracts.find(c => c.roomCode === roomCode && (c.status === 'Hiệu lực' || c.status === 'Đã ký' || c.status === 'Chờ hiệu lực'));
+    const report = handoverReports.find(h => (h.leaseId === leaseId || h.roomCode === roomCode) && h.status === 'Đã xác nhận');
 
-    if (!contract || contract.status !== 'Hiệu lực' && contract.status !== 'Đã ký') {
-      return { success: false, message: 'Hợp đồng chưa ký hoặc chưa có hiệu lực.' };
+    // Tiêu chí 1: Hợp đồng đã ký
+    if (!contract || (!contract.isSignedPaper && contract.status !== 'Hiệu lực' && contract.status !== 'Đã ký' && contract.status !== 'Chờ hiệu lực')) {
+      return { success: false, message: 'Tiêu chí 1 Chưa đạt: Hợp đồng chưa ký hoặc chưa có hiệu lực (EF-02).' };
     }
-    if (!contract.firstMonthRentPaid || !room?.firstMonthRentPaid) {
-      return { success: false, message: 'Chưa thu đủ 1 tháng tiền cọc và 1 tháng tiền thuê đầu tại UC-PH-07.' };
+
+    // Tiêu chí 2 & 3: Cọc 1 tháng & Thuê đầu 1 tháng tại UC-PH-07
+    if (!contract.firstMonthRentPaid || !room?.firstMonthRentPaid || !room?.hasDeposit) {
+      return { success: false, message: 'Tiêu chí 2 & 3 Chưa đạt: Chưa thu đủ 1 tháng tiền cọc và 1 tháng tiền thuê đầu tại UC-PH-07 (EF-01). Không cho nhận phòng trước rồi nộp bù.' };
     }
+
+    // Tiêu chí 4: Bàn giao nhận thực tế hoàn tất & UC-BG03 Đã xác nhận (hai bên đã ký tay)
     if (!report) {
-      return { success: false, message: 'Biên bản nhận phòng UC-BG03 chưa ở trạng thái Đã xác nhận (chưa có chữ ký tay hai bên).' };
+      return { success: false, message: 'Tiêu chí 4 Chưa đạt: Biên bản nhận phòng UC-BG03 chưa ở trạng thái Đã xác nhận (chưa có chữ ký tay hai bên).' };
     }
 
+    // Lưu ngày nhận phòng thực tế, chuyển trạng thái Đang thuê theo UC-PH-04
     setRooms(prev => prev.map(r => r.roomCode === roomCode ? {
       ...r,
       status: 'Đang thuê',
       currentTenantId: contract.tenantId,
       currentTenantName: contract.tenantName,
-      contractStartDate: contract.startDate,
+      contractStartDate: actualCheckInDate,
       contractEndDate: contract.endDate,
       currentContractId: contract.id,
       currentLeaseId: contract.leaseId,
-      totalOccupants: Math.max(1, r.totalOccupants)
+      totalOccupants: Math.max(1, r.totalOccupants),
+      firstMonthPeriod: `Từ ${actualCheckInDate} đến cuối kỳ`
     } : r));
 
     setContracts(prev => prev.map(c => c.id === contract.id ? {
@@ -781,8 +1059,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       actualCheckInDate
     } : c));
 
-    logSecurity('PH05_CHECKIN_CONFIRMED', `Room ${roomCode} checked in successfully. Status -> Đang thuê`);
-    return { success: true, message: 'Xác nhận nhận phòng hoàn tất! Phòng đã chuyển sang trạng thái Đang thuê.' };
+    // Phát sự kiện Bắt đầu lần thuê cho HSKT-02 để kiểm tra người ở cùng Dự kiến (không tự chuyển sang Đang cư trú)
+    const newEvent: LeaseStartEvent = {
+      eventId: 'evt_ls_' + Date.now(),
+      roomCode,
+      contractId: contract.id,
+      leaseId: contract.leaseId,
+      checkInDate: actualCheckInDate,
+      handoverReportId: report.id,
+      handoverVersion: handoverVersion || 'v1.0',
+      emittedAt: new Date().toISOString(),
+      coTenantsChecked: true,
+      syncStatus: 'Đã gửi HSKT-02'
+    };
+    setLeaseStartEvents(prev => [newEvent, ...prev]);
+
+    // Ghi lịch sử phòng
+    const checkInLog: RoomHistoryLog = {
+      id: 'rl_' + Date.now() + '_checkin',
+      roomCode,
+      field: 'Tiếp nhận phòng (UC-PH-05)',
+      oldValue: `Trạng thái: ${room?.status || 'Trống'}`,
+      newValue: `Đang thuê (Ngày nhận thực tế: ${actualCheckInDate}, Khách: ${contract.tenantName})`,
+      changedBy: currentUser?.fullName || 'Chủ nhà',
+      changedAt: new Date().toISOString()
+    };
+    setRoomHistory(prev => [checkInLog, ...prev]);
+
+    logSecurity('PH05_CHECKIN_CONFIRMED', `Room ${roomCode} check-in confirmed on ${actualCheckInDate}. Status -> Đang thuê. Event ${newEvent.eventId} emitted to HSKT-02`);
+    return { success: true, message: `Xác nhận nhận phòng hoàn tất! Phòng ${roomCode} đã chuyển sang Đang thuê. Kỳ thuê đầu được chốt từ ngày ${actualCheckInDate}. Sự kiện Bắt đầu lần thuê đã phát tới HSKT-02.` };
+  };
+
+  // UC-PH-06: Ghi nhận điều kiện còn thiếu
+  const saveMissingConditionPH06 = (params: {
+    roomCode: string;
+    contractId: string;
+    leaseId: string;
+    missingContractEffect: boolean;
+    missingHandover: boolean;
+    notes: string;
+    isTenantStoppedProcedure?: boolean;
+    tenantStopReason?: string;
+    tenantStopContent?: string;
+  }) => {
+    // BR-UC.PH.06-01 & BR-UC.PH.06-02: Bắt buộc hai khoản thanh toán đã Đạt
+    const room = rooms.find(r => r.roomCode === params.roomCode);
+    const contract = contracts.find(c => c.id === params.contractId);
+    if (!room?.hasDeposit || !room?.firstMonthRentPaid || !contract?.firstMonthRentPaid) {
+      return {
+        success: false,
+        message: 'Khóa chức năng UC-PH-06: Hai khoản tiền cọc 1 tháng và tiền thuê đầu 1 tháng chưa được xác minh Đạt. Vui lòng tra soát tại UC-PH-07 (BR-UC.PH.06-01/02).'
+      };
+    }
+
+    if (!params.notes.trim() && !params.isTenantStoppedProcedure) {
+      return { success: false, message: 'EF-01: Vui lòng nhập nội dung ghi chú điều kiện còn thiếu.' };
+    }
+
+    const newLog: MissingConditionLog = {
+      id: 'mc_' + Date.now(),
+      roomCode: params.roomCode,
+      contractId: params.contractId,
+      leaseId: params.leaseId,
+      missingContractEffect: params.missingContractEffect,
+      missingHandover: params.missingHandover,
+      notes: params.notes,
+      isTenantStoppedProcedure: params.isTenantStoppedProcedure,
+      tenantStopReason: params.tenantStopReason,
+      tenantStopContent: params.tenantStopContent,
+      loggedBy: currentUser?.fullName || 'Chủ nhà',
+      loggedAt: new Date().toISOString(),
+      status: params.isTenantStoppedProcedure ? 'Khách dừng thủ tục' : 'Đang theo dõi'
+    };
+
+    setMissingConditionLogs(prev => [newLog, ...prev]);
+
+    // BR-UC.PH.06-05: Khách dừng thủ tục không đồng nghĩa hợp đồng bị hủy, tiền được hoàn hay phòng đổi trạng thái
+    logSecurity('PH06_MISSING_CONDITION_SAVED', `Room ${params.roomCode} recorded missing condition. Status: ${newLog.status}`);
+    return {
+      success: true,
+      message: params.isTenantStoppedProcedure
+        ? 'Đã ghi nhận khách chủ động dừng làm thủ tục. Hợp đồng và phòng được giữ nguyên theo BR-UC.PH.06-05.'
+        : 'Đã lưu ghi nhận điều kiện còn thiếu thành công! Phòng giữ nguyên trạng thái để theo dõi.'
+    };
   };
 
   const updateExpectedReturnDatePH11_12 = (params: {
@@ -839,7 +1198,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     contactResult: 'Chưa phản hồi' | 'Không tiếp tục thuê – Chưa xác nhận ngày dự kiến trả' | 'Chờ đối chiếu' | 'Đồng ý tiếp tục thuê';
     content: string;
     nextContactDate?: string;
+    isAppointmentOnly?: boolean;
+    contactChannelSource?: 'UC-PH-13' | 'UC-BG09' | 'UC-PH-09';
   }) => {
+    // BR-UC.PH.13-14 & EF-04 / AF-07: Kiểm tra mâu thuẫn căn cứ ASIS-04 Tiếp tục thuê
+    const activeRenewal = contracts.find(c => c.roomCode === params.roomCode && c.contractType === 'Hợp đồng nối tiếp' && (c.status === 'Hiệu lực' || c.status === 'Chờ hiệu lực'));
+    let effectiveResult = params.contactResult;
+    let isConflict = false;
+    let hdt06Ref: string | undefined = undefined;
+
+    if (params.contactResult === 'Không tiếp tục thuê – Chưa xác nhận ngày dự kiến trả' && activeRenewal) {
+      effectiveResult = 'Chờ đối chiếu';
+      isConflict = true;
+      hdt06Ref = 'EVT-CONFLICT-HDT06-' + Date.now().toString().slice(-6);
+    }
+
     const newLog: TenantContactLog = {
       id: 'tc_' + Date.now(),
       roomCode: params.roomCode,
@@ -847,20 +1220,133 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       contactTimeActual: params.contactTimeActual,
       systemInputTime: new Date().toISOString(),
       contactSource: params.contactSource,
-      contactResult: params.contactResult,
+      contactResult: effectiveResult,
       content: params.content,
       nextContactDate: params.nextContactDate,
-      loggedBy: currentUser?.fullName || 'Chủ nhà'
+      loggedBy: currentUser?.fullName || 'Chủ nhà',
+      conflictFlag: isConflict,
+      hdt06Reference: hdt06Ref,
+      contactChannelSource: params.contactChannelSource || 'UC-PH-13',
+      isAppointmentOnly: params.isAppointmentOnly
     };
+
     setContactLogs(prev => [newLog, ...prev]);
-    return { success: true, message: 'Đã lưu ghi nhận liên hệ khách thuê.' };
+
+    if (isConflict) {
+      logSecurity('PH13_CONFLICT_DETECTED', `Room ${params.roomCode} feedback conflict with ASIS-04. Logged as Chờ đối chiếu (${hdt06Ref})`);
+      return {
+        success: true,
+        logId: newLog.id,
+        isConflict: true,
+        message: `Phản hồi thực tế mâu thuẫn với hợp đồng nối tiếp ASIS-04 (${activeRenewal?.id}). Đã lưu sự kiện Chờ đối chiếu (${hdt06Ref}) và gửi tham chiếu sang UC-HDT-06 theo BR-UC.PH.13-14. Không đổi nhãn tiếp tục thuê hiện hành.`
+      };
+    }
+
+    logSecurity('PH13_CONTACT_LOGGED', `Room ${params.roomCode} contact logged: ${params.contactResult} via ${params.contactSource}`);
+    return {
+      success: true,
+      logId: newLog.id,
+      isConflict: false,
+      message: params.isAppointmentOnly
+        ? 'Đã lưu lịch hẹn liên hệ tiếp theo riêng vào nhật ký (Trường hợp 09).'
+        : 'Đã lưu ghi nhận kết quả liên hệ khách thuê thành công!'
+    };
   };
 
-  const confirmReturnStep305AndVacantPH08 = (roomCode: string, leaseId: string) => {
-    const inspection = returnInspections.find(i => i.roomCode === roomCode && i.leaseId === leaseId);
-    if (!inspection || inspection.step304Status !== 'Đã nhận lại' || !inspection.step305Confirmed) {
-      return { success: false, message: 'Chưa có kết quả nhận lại thực tế được Chủ nhà xác nhận độc lập tại ASIS-02 bước 3.05.' };
+  // UC-PH-14: Hủy kế hoạch trả phòng tự động khi hợp đồng tiếp tục thuê có hiệu lực
+  const autoCancelReturnPlanPH14 = (roomCode: string, renewalContractId?: string) => {
+    const room = rooms.find(r => r.roomCode === roomCode);
+    if (!room) return { success: false, message: 'Không tìm thấy thông tin phòng.' };
+
+    const renewal = renewalContractId
+      ? contracts.find(c => c.id === renewalContractId)
+      : contracts.find(c => c.roomCode === roomCode && c.contractType === 'Hợp đồng nối tiếp' && c.status === 'Hiệu lực');
+
+    if (!renewal || renewal.status !== 'Hiệu lực') {
+      return { success: false, message: 'EF-01: Chưa có hợp đồng nối tiếp mới đã ký và có hiệu lực theo UC-HDT-07. Giữ nguyên kế hoạch trả và trạng thái phòng.' };
     }
+
+    // Tự đánh dấu kế hoạch cũ Đã hủy do gia hạn
+    setRooms(prev => prev.map(r => r.roomCode === roomCode ? {
+      ...r,
+      status: 'Đang thuê', // BR-UC.PH.14-03
+      expectedReturnDate: undefined,
+      returnPlanCancelled: true,
+      returnPlanCancelReason: `Đã hủy do gia hạn (Hợp đồng: ${renewal.id})`
+    } : r));
+
+    setReturnPlans(prev => prev.map(p => (p.roomCode === roomCode && p.status === 'Còn theo dõi') ? {
+      ...p,
+      status: 'Đã hủy',
+      reason: `Đã hủy do gia hạn hợp đồng nối tiếp ${renewal.id}`
+    } : p));
+
+    // Lịch sử phòng
+    const cancelLog: RoomHistoryLog = {
+      id: 'rl_' + Date.now() + '_cancel_plan',
+      roomCode,
+      field: 'Hủy kế hoạch trả phòng tự động (UC-PH-14)',
+      oldValue: `Kế hoạch trả ngày ${room.expectedReturnDate || 'đang theo dõi'}`,
+      newValue: `Đã hủy do gia hạn (Hợp đồng mới có hiệu lực: ${renewal.id}, Phòng giữ Đang thuê)`,
+      changedBy: 'Hệ thống tự động (UC-PH-14)',
+      changedAt: new Date().toISOString()
+    };
+    setRoomHistory(prev => [cancelLog, ...prev]);
+
+    logSecurity('PH14_PLAN_AUTO_CANCELLED', `Room ${roomCode} return plan auto-cancelled due to renewal ${renewal.id}. Status -> Đang thuê.`);
+    return {
+      success: true,
+      message: `Hệ thống đã tự động hủy kế hoạch trả cũ do hợp đồng nối tiếp ${renewal.id} đã có hiệu lực (BR-UC.PH.14-02). Phòng giữ trạng thái Đang thuê.`
+    };
+  };
+
+  // UC-PH-15: Kiểm tra kết quả tiếp tục thuê
+  const checkExtensionResultPH15 = (roomCode: string) => {
+    const activeContract = contracts.find(c => c.roomCode === roomCode && (c.status === 'Hiệu lực' || c.contractType === 'Hợp đồng lần đầu'));
+    const renewalContract = contracts.find(c => c.roomCode === roomCode && c.contractType === 'Hợp đồng nối tiếp');
+
+    if (!renewalContract) {
+      return {
+        result: 'Chưa có căn cứ' as const,
+        caseType: 'Trường hợp 02' as const,
+        reason: 'Chưa có hợp đồng mới được lập trên hệ thống. Khách chưa có bằng chứng hợp lệ về việc tiếp tục thuê.',
+        activeContract,
+        renewalContract: undefined
+      };
+    }
+
+    if (renewalContract.status === 'Hiệu lực') {
+      return {
+        result: 'Có bằng chứng hợp lệ về việc tiếp tục thuê' as const,
+        caseType: 'Trường hợp 03' as const,
+        reason: `Hợp đồng nối tiếp ${renewalContract.id} đã ký và đang có hiệu lực pháp lý (ngày ký: ${renewalContract.signedDate || 'Đã ký'}). Kế hoạch trả cũ đã tự hủy, phòng duy trì trạng thái Đang thuê và kế thừa cọc gốc ${renewalContract.depositAmount.toLocaleString('vi-VN')} đ (BR-UC.PH.15-03).`,
+        activeContract,
+        renewalContract
+      };
+    }
+
+    // Trường hợp 01: Nháp hoặc Chờ hiệu lực
+    return {
+      result: 'Chưa có căn cứ' as const,
+      caseType: 'Trường hợp 01' as const,
+      reason: `Hợp đồng nối tiếp ${renewalContract.id} hiện ở trạng thái "${renewalContract.status}" (chưa có hiệu lực hoặc chưa đến ngày bắt đầu ${renewalContract.startDate}). Tiếp tục theo dõi kế hoạch trả hiện tại, không tự hủy kế hoạch.`,
+      activeContract,
+      renewalContract
+    };
+  };
+
+  // UC-PH-08: Kiểm tra kết quả trả phòng & cập nhật trạng thái Trống
+  const confirmReturnStep305AndVacantPH08 = (roomCode: string, leaseId: string, actualReturnDate?: string) => {
+    const inspection = returnInspections.find(i => (i.roomCode === roomCode && i.leaseId === leaseId) || (i.roomCode === roomCode && i.step304Status === 'Đã nhận lại'));
+    if (!inspection || inspection.step304Status !== 'Đã nhận lại') {
+      return { success: false, message: 'EF-01: Chưa có kết quả nhận lại thực tế tại ASIS-02 bước 3.04 (3.04 != Đã nhận lại). Giữ trạng thái phòng hiện tại.' };
+    }
+    if (!inspection.step305Confirmed) {
+      return { success: false, message: 'EF-01: Kết quả 3.04 = Đã nhận lại nhưng chưa có xác nhận độc lập tại bước 3.05 của Chủ nhà (người xác nhận và thời điểm/bằng chứng). Vui lòng xác nhận 3.05 tại ASIS-02 trước khi cập nhật Trống (BR-UC.PH.08-01).' };
+    }
+
+    const returnDate = actualReturnDate || inspection.inspectionDate || new Date().toISOString().split('T')[0];
+    const room = rooms.find(r => r.roomCode === roomCode);
 
     setRooms(prev => prev.map(r => r.roomCode === roomCode ? {
       ...r,
@@ -878,8 +1364,113 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalOccupants: 0
     } : r));
 
-    logSecurity('PH08_ROOM_VACATED', `Room ${roomCode} marked Trống following 3.05 handover confirmation.`);
-    return { success: true, message: 'Cập nhật trạng thái Trống thành công! Ngày kết thúc thuê thực tế đã được lưu.' };
+    // Kết thúc kế hoạch trả nếu có
+    setReturnPlans(prev => prev.map(p => (p.roomCode === roomCode && p.status === 'Còn theo dõi') ? {
+      ...p,
+      status: 'Đã kết thúc'
+    } : p));
+
+    // BR-UC.PH.08-03: Tự lưu liên kết hợp đồng, khách thuê, người ở cùng và biên bản vào lịch sử lần thuê
+    const vacateLog: RoomHistoryLog = {
+      id: 'rl_' + Date.now() + '_vacate',
+      roomCode,
+      field: 'Kết thúc lần thuê thực tế (UC-PH-08)',
+      oldValue: `Trạng thái: ${room?.status || 'Đang thuê'} (Khách: ${room?.currentTenantName || '—'})`,
+      newValue: `Trạng thái: Trống (Ngày nhận lại thực tế: ${returnDate}, Biên bản: ${inspection.id}, Xác nhận 3.05 bởi ${inspection.step305ConfirmedBy || 'Chủ nhà'})`,
+      changedBy: currentUser?.fullName || 'Chủ nhà',
+      changedAt: new Date().toISOString()
+    };
+    setRoomHistory(prev => [vacateLog, ...prev]);
+
+    logSecurity('PH08_ROOM_VACATED', `Room ${roomCode} marked Trống following 3.05 handover confirmation on ${returnDate}.`);
+    return {
+      success: true,
+      message: `Cập nhật trạng thái Trống thành công! Ngày kết thúc lần thuê thực tế (${returnDate}) đã được ghi nhận. Không cần chờ quyết toán tiền cọc theo BR-UC.PH.08-02.`
+    };
+  };
+
+  // UC-PH-09: Ghi nhận chưa bàn giao xong
+  const saveUnfinishedHandoverPH09 = (params: {
+    roomCode: string;
+    leaseId: string;
+    contractId: string;
+    handoverVersion: string;
+    reason: string;
+    obstacleContent: string;
+    existingId?: string;
+  }) => {
+    // EF-02: Lý do hoặc nội dung bị bỏ trống
+    if (!params.reason.trim()) {
+      return { success: false, message: 'EF-02: Lý do khách chưa thể tiếp tục bàn giao là bắt buộc.' };
+    }
+    if (!params.obstacleContent.trim()) {
+      return { success: false, message: 'EF-02: Nội dung vướng mắc thực tế là bắt buộc.' };
+    }
+
+    // BR-UC.PH.09-01 & EF-01: Chỉ tạo mới hoặc cập nhật khi kết quả thực tế vẫn là Chưa nhận lại
+    const inspection = returnInspections.find(i => (i.roomCode === params.roomCode && i.leaseId === params.leaseId) || i.roomCode === params.roomCode);
+    if (inspection && inspection.step304Status === 'Đã nhận lại') {
+      return {
+        success: false,
+        message: 'EF-01: Kết quả bàn giao của phòng đã chuyển thành Đã nhận lại thực tế. Không cho phép tạo/cập nhật ghi nhận chưa bàn giao xong (BR-UC.PH.09-01).'
+      };
+    }
+
+    const now = new Date().toISOString();
+    const user = currentUser?.fullName || 'Chủ nhà';
+
+    // AF-01: Cập nhật nội dung có lưu lịch sử
+    if (params.existingId) {
+      const existing = unfinishedHandoverLogs.find(u => u.id === params.existingId);
+      if (existing) {
+        const hist = existing.history || [];
+        const newHistItem = {
+          reason: existing.reason,
+          obstacleContent: existing.obstacleContent,
+          changedBy: user,
+          changedAt: now
+        };
+
+        setUnfinishedHandoverLogs(prev => prev.map(u => u.id === params.existingId ? {
+          ...u,
+          reason: params.reason.trim(),
+          obstacleContent: params.obstacleContent.trim(),
+          updatedAt: now,
+          updatedBy: user,
+          history: [...hist, newHistItem]
+        } : u));
+
+        logSecurity('PH09_UPDATED', `Room ${params.roomCode} unfinished handover updated by ${user}`);
+        return {
+          success: true,
+          message: 'Cập nhật nội dung vướng mắc bàn giao thành công! Lịch sử đã được lưu lại (AF-01).'
+        };
+      }
+    }
+
+    // Tạo mới
+    const newRecord: UnfinishedHandoverLog = {
+      id: 'ufh_' + Date.now(),
+      roomCode: params.roomCode,
+      leaseId: params.leaseId,
+      contractId: params.contractId,
+      handoverVersion: params.handoverVersion || 'v1.0',
+      step304Status: 'Chưa nhận lại',
+      notFinishedIndicator: 'Chưa kết thúc thuê', // BR-UC.PH.09-03
+      reason: params.reason.trim(),
+      obstacleContent: params.obstacleContent.trim(),
+      loggedBy: user,
+      loggedAt: now
+    };
+
+    setUnfinishedHandoverLogs(prev => [newRecord, ...prev]);
+
+    // BR-UC.PH.09-03: Ghi nhận này không phải trạng thái sử dụng phòng và không làm phòng chuyển Trống
+    logSecurity('PH09_CREATED', `Room ${params.roomCode} recorded unfinished handover: ${params.reason}`);
+    return {
+      success: true,
+      message: 'Ghi nhận chưa bàn giao xong thành công! Phòng giữ nguyên trạng thái sử dụng và gắn chỉ báo Chưa kết thúc thuê theo BR-UC.PH.09-03.'
+    };
   };
 
   // ==================== HANDOVER & ASSETS METHODS (QT02) ====================
@@ -1494,24 +2085,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // ==================== DEBTS (QT09) ====================
-  const recordDebtReminder09_2 = (reminder: Omit<DebtHistoryReminder, 'id' | 'loggedAt' | 'loggedBy'>) => {
+  const recordDebtReminder09_2 = (reminder: Omit<DebtHistoryReminder, 'id' | 'loggedAt' | 'loggedBy'>): { success: boolean; message: string; record?: DebtHistoryReminder } => {
+    if (!reminder.contactDate || !reminder.channel || !reminder.result?.trim()) {
+      return { success: false, message: 'Lỗi EF-02: Thiếu ngày liên hệ, kênh hoặc kết quả trao đổi bắt buộc.' };
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (!reminder.isRetrospective && reminder.contactDate > todayStr) {
+      return { success: false, message: 'Lỗi EF-03: Ngày liên hệ không thể ở tương lai.' };
+    }
+
+    // Check duplicate key (EF-05): noticeId + contactDate + channel
+    const duplicate = debtReminders.find(r =>
+      r.noticeId === reminder.noticeId &&
+      r.contactDate === reminder.contactDate &&
+      r.channel === reminder.channel
+    );
+    if (duplicate) {
+      return {
+        success: false,
+        message: 'Lỗi EF-05: Bản ghi nhắc nợ cùng kênh và ngày liên hệ này đã tồn tại trong lịch sử.',
+        record: duplicate
+      };
+    }
+
     const newRem: DebtHistoryReminder = {
       ...reminder,
       id: 'drm_' + Date.now(),
       loggedAt: new Date().toISOString(),
-      loggedBy: currentUser?.fullName || 'Chủ nhà'
+      loggedBy: currentUser?.fullName || 'Quản lý / Chủ nhà'
     };
+
     setDebtReminders(prev => [newRem, ...prev]);
+    logSecurity('DEBT_REMINDER_LOGGED_09_2', `Reminded notice ${reminder.noticeId} (Room ${reminder.roomCode}) via ${reminder.channel}`);
+    return { success: true, message: 'Ghi nhận lịch sử nhắc nợ thành công (UC-CN-02)!', record: newRem };
   };
 
-  const recordDebtPromise09_3 = (promise: Omit<DebtPromise, 'id' | 'loggedAt' | 'loggedBy'>) => {
+  const recordDebtPromise09_3 = (promise: Omit<DebtPromise, 'id' | 'loggedAt' | 'loggedBy'>): { success: boolean; message: string; record?: DebtPromise } => {
+    if (!promise.content?.trim()) {
+      return { success: false, message: 'Lỗi EF-02: Nội dung phản hồi là trường bắt buộc.' };
+    }
+
+    if (promise.hasPromiseDate && !promise.promisedDate) {
+      return { success: false, message: 'Lỗi EF-03: Vui lòng nhập ngày hẹn thanh toán khi chọn có hẹn.' };
+    }
+
     const newProm: DebtPromise = {
       ...promise,
       id: 'dpr_' + Date.now(),
       loggedAt: new Date().toISOString(),
-      loggedBy: currentUser?.fullName || 'Chủ nhà'
+      loggedBy: currentUser?.fullName || 'Quản lý / Chủ nhà'
     };
+
     setDebtPromises(prev => [newProm, ...prev]);
+    logSecurity('DEBT_PROMISE_LOGGED_09_3', `Recorded promise for notice ${promise.noticeId} (Room ${promise.roomCode})`);
+    return { success: true, message: 'Ghi nhận phản hồi và ngày hẹn thanh toán thành công (UC-CN-03)!', record: newProm };
   };
 
   const resetAllToSeedData = () => {
@@ -1581,13 +2209,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       roomHistory,
       returnPlans,
       contactLogs,
+      initialPaymentRecords,
+      missingConditionLogs,
+      unfinishedHandoverLogs,
+      leaseStartEvents,
       addRoom,
       updateRoom,
       recordInitialPaymentPH07,
+      correctInitialPaymentPH07,
       confirmCheckInPH05,
+      saveMissingConditionPH06,
       updateExpectedReturnDatePH11_12,
       recordTenantContactPH13,
+      autoCancelReturnPlanPH14,
+      checkExtensionResultPH15,
       confirmReturnStep305AndVacantPH08,
+      saveUnfinishedHandoverPH09,
 
       standardAssets,
       inventoryRecords,
@@ -1651,6 +2288,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       securityLogs,
       logSecurity,
+
+      // Management Reports (QT10)
+      reportSnapshots,
+      saveReportSnapshot: (snapshot: ManagementReportSnapshot) => {
+        setReportSnapshots(prev => [snapshot, ...prev]);
+        logSecurity('Lưu snapshot báo cáo quản trị', `Mã BC: ${snapshot.reportCode} - Kỳ: ${snapshot.periodLabel}`);
+      },
+
       resetAllToSeedData
     }}>
       {children}

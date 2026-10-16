@@ -4,7 +4,6 @@ import { Header } from './components/layout/Header';
 import { Sidebar, NavTabKey, NAV_ITEMS } from './components/layout/Sidebar';
 import { LoginModal } from './components/auth/LoginModal';
 import { AccountProfileModal } from './components/auth/AccountProfileModal';
-import { UseCasesNavigatorModal } from './components/common/UseCasesNavigatorModal';
 
 import { ConfigView } from './components/views/ConfigView';
 import { RoomsView } from './components/views/RoomsView';
@@ -23,27 +22,9 @@ const MainAppContent: React.FC = () => {
 
   const [currentTab, setCurrentTab] = useState<NavTabKey>('rooms');
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showNavigatorModal, setShowNavigatorModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const activeNavItem = NAV_ITEMS.find(i => i.key === currentTab) || NAV_ITEMS[1];
-
-  const handleSelectUseCase = (tabKey: string, code: string) => {
-    // If it's an auth flow
-    if (tabKey.startsWith('auth_')) {
-      if (tabKey === 'auth_profile') {
-        setShowProfileModal(true);
-      } else {
-        setShowLoginModal(true);
-      }
-      return;
-    }
-
-    // Switch to corresponding view
-    if (NAV_ITEMS.some(i => i.key === tabKey)) {
-      setCurrentTab(tabKey as NavTabKey);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900">
@@ -51,7 +32,6 @@ const MainAppContent: React.FC = () => {
       <Header
         currentTabName={activeNavItem.label}
         onOpenProfile={() => setShowProfileModal(true)}
-        onOpenNavigator={() => setShowNavigatorModal(true)}
         onOpenLogin={() => setShowLoginModal(true)}
       />
 
@@ -100,12 +80,6 @@ const MainAppContent: React.FC = () => {
       <AccountProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
-      />
-
-      <UseCasesNavigatorModal
-        isOpen={showNavigatorModal}
-        onClose={() => setShowNavigatorModal(false)}
-        onSelectUseCase={handleSelectUseCase}
       />
     </div>
   );

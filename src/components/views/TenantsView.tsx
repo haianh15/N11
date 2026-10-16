@@ -99,7 +99,7 @@ export const TenantsView: React.FC = () => {
     setShowAddCoTenant(false);
     setCoName('');
     setCoIdNumber('');
-    alert('Thêm người ở cùng thành công (UC-HSKT-02)!');
+    alert('Thêm người ở cùng thành công!');
   };
 
   const handleEditTenantSubmit = (e: React.FormEvent) => {
@@ -113,7 +113,7 @@ export const TenantsView: React.FC = () => {
     });
 
     setShowEditModal(false);
-    alert('Cập nhật hồ sơ khách thuê thành công (UC-HSKT-04)!');
+    alert('Cập nhật hồ sơ khách thuê thành công!');
   };
 
   return (
@@ -122,11 +122,10 @@ export const TenantsView: React.FC = () => {
       <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Quy trình 03</span>
-            <h1 className="text-lg font-bold text-slate-900">Quản lý Hồ sơ Khách thuê (UC-HSKT-01 → UC-HSKT-05)</h1>
+            <h1 className="text-lg font-bold text-slate-900">Quản lý Hồ sơ Khách thuê</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý hồ sơ khách chính, người ở cùng (cư trú), kiểm tra dữ liệu thay đổi và tra cứu lịch sử lần thuê.
+            Quản lý hồ sơ khách chính, người ở cùng (cư trú), kiểm tra định danh và tra cứu lịch sử thuê phòng.
           </p>
         </div>
 
@@ -135,19 +134,19 @@ export const TenantsView: React.FC = () => {
             onClick={() => setActiveTab('tenants')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'tenants' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Hồ sơ khách (HSKT-01/04)
+            Hồ sơ khách thuê
           </button>
           <button
             onClick={() => setActiveTab('co_tenants')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'co_tenants' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Người ở cùng (HSKT-02)
+            Người ở cùng
           </button>
           <button
             onClick={() => setActiveTab('history')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'history' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Lịch sử hồ sơ (HSKT-05)
+            Lịch sử hồ sơ
           </button>
         </div>
       </div>
@@ -175,7 +174,7 @@ export const TenantsView: React.FC = () => {
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
-              Ghi nhận hồ sơ khách mới (UC-HSKT-01)
+              Thêm hồ sơ khách thuê
             </button>
           </div>
 
@@ -223,7 +222,7 @@ export const TenantsView: React.FC = () => {
                           }}
                           className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-semibold cursor-pointer"
                         >
-                          Cập nhật (HSKT-04)
+                          Cập nhật
                         </button>
                       </td>
                     </tr>
@@ -235,12 +234,12 @@ export const TenantsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 2: CO-TENANTS (UC-HSKT-02) ==================== */}
+      {/* ==================== TAB 2: CO-TENANTS ==================== */}
       {activeTab === 'co_tenants' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-HSKT-02: Quản lý người ở cùng</h2>
+              <h2 className="text-sm font-bold text-slate-800">Quản lý người ở cùng</h2>
               <p className="text-xs text-slate-500">
                 Theo dõi tình trạng cư trú: Nháp / Dự kiến / Đang cư trú / Đã kết thúc. Người ở cùng không có hóa đơn riêng.
               </p>
@@ -250,7 +249,7 @@ export const TenantsView: React.FC = () => {
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Thêm người ở cùng (UC-HSKT-02)
+              Thêm người ở cùng
             </button>
           </div>
 
@@ -308,12 +307,12 @@ export const TenantsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 3: HISTORY (UC-HSKT-05) ==================== */}
+      {/* ==================== TAB 3: HISTORY ==================== */}
       {activeTab === 'history' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-HSKT-05: Tra cứu lịch sử hồ sơ khách thuê</h2>
+              <h2 className="text-sm font-bold text-slate-800">Lịch sử hồ sơ khách thuê</h2>
               <p className="text-xs text-slate-500">Tra cứu lịch sử biến động, thay đổi thông tin và các lần cư trú của khách.</p>
             </div>
           </div>
@@ -339,11 +338,11 @@ export const TenantsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== MODAL: ADD TENANT HSKT01 ==================== */}
+      {/* ==================== MODAL: ADD TENANT ==================== */}
       {showAddTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Ghi nhận hồ sơ khách thuê (UC-HSKT-01)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Ghi nhận hồ sơ khách thuê</h3>
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">
@@ -442,18 +441,18 @@ export const TenantsView: React.FC = () => {
                 onClick={handleAddTenantSubmit}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold cursor-pointer"
               >
-                Xác nhận tạo hồ sơ (UC-HSKT-01)
+                Xác nhận tạo hồ sơ
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ==================== MODAL: ADD CO-TENANT HSKT02 ==================== */}
+      {/* ==================== MODAL: ADD CO-TENANT ==================== */}
       {showAddCoTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Thêm người ở cùng (UC-HSKT-02)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Thêm người ở cùng</h3>
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Khách chính đại diện</label>
@@ -529,13 +528,13 @@ export const TenantsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== MODAL: EDIT TENANT HSKT04 ==================== */}
+      {/* ==================== MODAL: EDIT TENANT ==================== */}
       {showEditModal && selectedTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Cập nhật hồ sơ khách thuê (UC-HSKT-04)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Cập nhật hồ sơ khách thuê</h3>
             <p className="text-[11px] text-slate-500">
-              Đã kiểm tra đối chiếu dữ liệu thay đổi hợp lệ theo điểm kiểm soát UC-HSKT-03.
+              Cập nhật thông tin định danh và địa chỉ liên lạc của khách thuê.
             </p>
 
             <div>

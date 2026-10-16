@@ -5,14 +5,12 @@ import { Building2, User, LogOut, Key, BookOpen, RotateCcw, ChevronDown, Shield 
 interface HeaderProps {
   currentTabName: string;
   onOpenProfile: () => void;
-  onOpenNavigator: () => void;
   onOpenLogin: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentTabName,
   onOpenProfile,
-  onOpenNavigator,
   onOpenLogin
 }) => {
   const { currentUser, currentSession, logout, resetAllToSeedData } = useApp();
@@ -38,27 +36,17 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Zone 2: Active section label & breadcrumb */}
       <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 truncate">
-        <span>Hệ thống Quản trị</span>
+        <span>Hệ thống Quản lý</span>
         <span aria-hidden="true">/</span>
         <span className="font-semibold text-slate-800 truncate">{currentTabName}</span>
       </div>
 
       {/* Zone 3: Primary Action & Account Menu */}
       <div className="flex items-center gap-2.5 shrink-0">
-        {/* Quick 63 Use Cases Navigator Button */}
-        <button
-          onClick={onOpenNavigator}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
-          title="Tra cứu nhanh 63 Use Case chuẩn đặc tả"
-        >
-          <BookOpen className="w-3.5 h-3.5" />
-          <span>Tra cứu 63 Use Case</span>
-        </button>
-
         {/* Demo Data Reset Button */}
         <button
           onClick={() => {
-            if (window.confirm('Khôi phục toàn bộ dữ liệu mẫu (Seed Data) chuẩn ban đầu?')) {
+            if (window.confirm('Khôi phục toàn bộ dữ liệu mẫu ban đầu?')) {
               resetAllToSeedData();
               alert('Đã khôi phục dữ liệu mẫu ban đầu thành công!');
             }
@@ -92,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="text-[10px] text-blue-700 font-bold uppercase mt-0.5">{currentUser.role}</div>
                 </div>
 
-                {/* Tùy chọn: Xem tài khoản và đổi mật khẩu (UC-TK-03) */}
+                {/* Tùy chọn: Xem tài khoản và đổi mật khẩu */}
                 <button
                   onClick={() => {
                     setShowAccountMenu(false);
@@ -101,16 +89,16 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-full px-3.5 py-2 text-left hover:bg-slate-50 text-slate-700 flex items-center gap-2 cursor-pointer transition-colors"
                 >
                   <Key className="w-4 h-4 text-slate-500" />
-                  <span>Xem tài khoản & đổi mật khẩu (UC-TK-03)</span>
+                  <span>Xem tài khoản & đổi mật khẩu</span>
                 </button>
 
-                {/* Tùy chọn: Đăng xuất (UC-TK-02) */}
+                {/* Tùy chọn: Đăng xuất */}
                 <button
                   onClick={handleLogoutClick}
                   className="w-full px-3.5 py-2 text-left hover:bg-red-50 text-red-600 flex items-center gap-2 cursor-pointer transition-colors border-t border-slate-100"
                 >
                   <LogOut className="w-4 h-4 text-red-500" />
-                  <span>Đăng xuất (UC-TK-02)</span>
+                  <span>Đăng xuất</span>
                 </button>
               </div>
             )}

@@ -153,6 +153,90 @@ export interface TenantContactLog {
   nextContactDate?: string;
   loggedBy: string;
   conflictFlag?: boolean;
+  hdt06Reference?: string;
+  contactChannelSource?: 'UC-PH-13' | 'UC-BG09' | 'UC-PH-09';
+  isAppointmentOnly?: boolean;
+}
+
+// UC-PH-06: Ghi nhận điều kiện còn thiếu
+export interface MissingConditionLog {
+  id: string;
+  roomCode: string;
+  contractId: string;
+  leaseId: string;
+  missingContractEffect: boolean;
+  missingHandover: boolean;
+  notes: string;
+  isTenantStoppedProcedure?: boolean;
+  tenantStopReason?: string;
+  tenantStopContent?: string;
+  loggedBy: string;
+  loggedAt: string;
+  status: 'Đang theo dõi' | 'Đã bổ sung' | 'Khách dừng thủ tục';
+}
+
+// UC-PH-07: Ghi nhận hoàn tất một tháng tiền cọc và một tháng tiền thuê đầu
+export interface InitialPaymentRecord {
+  id: string;
+  contractId: string;
+  roomCode: string;
+  leaseId: string;
+  depositAmount: number; // 1 tháng tiền cọc
+  firstMonthRentAmount: number; // 1 tháng tiền thuê
+  actualAmount: number; // Thực nhận = cọc + tiền thuê
+  receivedDate: string;
+  transactionCode: string;
+  bankAccountReceived: string; // Tài khoản MB Bank
+  proofFile?: string;
+  depositCode: string; // Mã cọc gốc
+  rentPeriodNote: string; // Kỳ thuê đầu đã trả trước
+  confirmedBy: string;
+  confirmedAt: string;
+  correctionHistory?: {
+    field: string;
+    oldVal: string;
+    newVal: string;
+    reason: string;
+    correctedBy: string;
+    correctedAt: string;
+  }[];
+}
+
+// UC-PH-09: Ghi nhận chưa bàn giao xong
+export interface UnfinishedHandoverLog {
+  id: string;
+  roomCode: string;
+  leaseId: string;
+  contractId: string;
+  handoverVersion: string; // Mã phiên bản kết quả UC-BG09 (ví dụ: v1.0)
+  step304Status: 'Chưa nhận lại';
+  notFinishedIndicator: 'Chưa kết thúc thuê'; // Chỉ báo nghiệp vụ (không phải trạng thái sử dụng phòng)
+  reason: string; // Lý do bắt buộc (EF-02)
+  obstacleContent: string; // Nội dung vướng mắc bắt buộc
+  loggedBy: string;
+  loggedAt: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  history?: {
+    reason: string;
+    obstacleContent: string;
+    changedBy: string;
+    changedAt: string;
+  }[];
+}
+
+// UC-PH-05: Sự kiện Bắt đầu lần thuê cho HSKT-02
+export interface LeaseStartEvent {
+  eventId: string;
+  roomCode: string;
+  contractId: string;
+  leaseId: string;
+  checkInDate: string;
+  handoverReportId?: string;
+  handoverVersion?: string;
+  emittedAt: string;
+  coTenantsChecked: boolean;
+  syncStatus: 'Đã gửi HSKT-02' | 'Chờ đồng bộ';
 }
 
 // ==================== QUY TRÌNH 02: BÀN GIAO & TÀI SẢN ====================
@@ -597,6 +681,9 @@ export interface DebtHistoryReminder {
   channel: 'Zalo' | 'Điện thoại' | 'Gặp trực tiếp';
   result: string;
   notes?: string;
+  proofFile?: string;
+  isRetrospective?: boolean;
+  tenantConfirmedContact?: boolean;
   loggedBy: string;
   loggedAt: string;
 }
@@ -612,6 +699,47 @@ export interface DebtPromise {
   promisedDate?: string;
   notes?: string;
   proofFile?: string;
+  needsVerificationASIS08?: boolean;
+  verificationNote?: string;
   loggedBy: string;
   loggedAt: string;
 }
+
+// ==================== QUY TRÌNH 10: BÁO CÁO QUẢN TRỊ ====================
+export interface ManagementReportSnapshot {
+  id: string;
+  reportCode: string;
+  createdAt: string;
+  createdBy: string;
+  asOfTimestamp: string;
+  periodLabel: string;
+  sourceVersion: string;
+  roomStats: {
+    totalRooms: number;
+    vacantRooms: number;
+    rentedRooms: number;
+    returningRooms: number;
+    occupancyRate: number | string;
+    roomsSnapshot: {
+      roomCode: string;
+      status: string;
+      hasDeposit: boolean;
+      expectedReturnDate?: string;
+    }[];
+  };
+  financialStats: {
+    totalReceivable: number;
+    totalCollected: number; // Thực thu chuyển khoản ngân hàng
+    totalHandledByDeposit: number; // Khấu trừ bù cọc
+    totalUncollected: number;
+    totalOverdueDebt: number;
+    initialRentTotal: number;
+    nextRentTotal: number;
+    utilityFeesTotal: number;
+    depositHoldingTotal: number;
+  };
+  reconciliationStatus: 'Đã kiểm tra' | 'Chưa xác minh' | 'Có chênh lệch';
+  reconciledAt?: string;
+  reconciledBy?: string;
+}
+

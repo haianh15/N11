@@ -87,7 +87,7 @@ export const ContractsView: React.FC = () => {
     const res = confirmContractSignedHDT04(selectedContract.id, signDate, [signProof]);
     if (res.success) {
       setShowSignModal(false);
-      alert(res.message + ' Bạn có thể chuyển sang UC-PH-07 để ghi nhận thanh toán cọc và tiền thuê đầu.');
+      alert(res.message + ' Bạn có thể chuyển sang mục Quản lý phòng để ghi nhận thanh toán cọc và tiền thuê đầu.');
     }
   };
 
@@ -139,11 +139,10 @@ export const ContractsView: React.FC = () => {
       <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Quy trình 04</span>
-            <h1 className="text-lg font-bold text-slate-900">Quản lý Hợp đồng Thuê (UC-HDT-01 → UC-HDT-07)</h1>
+            <h1 className="text-lg font-bold text-slate-900">Quản lý Hợp đồng Thuê</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Lập hợp đồng lần đầu, theo dõi hạn, lịch đợt hợp đồng chung và ký kết hợp đồng nối tiếp kế thừa cọc gốc.
+            Lập hợp đồng lần đầu, theo dõi thời hạn thuê, lịch đợt hợp đồng chung và hợp đồng nối tiếp kế thừa tiền cọc.
           </p>
         </div>
 
@@ -152,13 +151,13 @@ export const ContractsView: React.FC = () => {
             onClick={() => setActiveTab('contracts')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'contracts' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Danh sách hợp đồng (HDT-02/05)
+            Danh sách hợp đồng
           </button>
           <button
             onClick={() => setActiveTab('schedules')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'schedules' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Lịch đợt chung (HDT-01)
+            Lịch đợt hợp đồng chung
           </button>
         </div>
       </div>
@@ -176,7 +175,7 @@ export const ContractsView: React.FC = () => {
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Lập hợp đồng thuê lần đầu (UC-HDT-02)
+              Lập hợp đồng thuê mới
             </button>
           </div>
 
@@ -237,7 +236,7 @@ export const ContractsView: React.FC = () => {
                             }}
                             className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-semibold cursor-pointer"
                           >
-                            Ghi nhận đã ký (HDT-04)
+                            Ghi nhận đã ký
                           </button>
                         )}
                         {c.status === 'Hiệu lực' && !contracts.some(sub => sub.previousContractId === c.id) && (
@@ -249,7 +248,7 @@ export const ContractsView: React.FC = () => {
                             }}
                             className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-semibold cursor-pointer"
                           >
-                            Gia hạn (HDT-06)
+                            Gia hạn hợp đồng
                           </button>
                         )}
                         {c.contractType === 'Hợp đồng nối tiếp' && c.status === 'Nháp' && (
@@ -260,7 +259,7 @@ export const ContractsView: React.FC = () => {
                             }}
                             className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold cursor-pointer"
                           >
-                            Kích hoạt nối tiếp (HDT-07)
+                            Kích hoạt nối tiếp
                           </button>
                         )}
                       </td>
@@ -273,14 +272,14 @@ export const ContractsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 2: BATCH SCHEDULES (UC-HDT-01) ==================== */}
+      {/* ==================== TAB 2: BATCH SCHEDULES ==================== */}
       {activeTab === 'schedules' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-HDT-01: Lịch đợt hợp đồng chung</h2>
+              <h2 className="text-sm font-bold text-slate-800">Lịch đợt hợp đồng chung</h2>
               <p className="text-xs text-slate-500">
-                Lịch chung áp dụng cho toàn bộ các phòng tham gia cùng đợt (BR-HDT01-11). Các hợp đồng chỉ đọc và tham chiếu theo đợt đã xác nhận.
+                Lịch chung áp dụng cho toàn bộ các phòng tham gia cùng đợt thuê. Các hợp đồng tham chiếu theo đợt đã xác nhận.
               </p>
             </div>
             <button
@@ -288,7 +287,7 @@ export const ContractsView: React.FC = () => {
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Thêm lịch đợt mới (HDT-01)
+              Thêm lịch đợt mới
             </button>
           </div>
 
@@ -324,7 +323,7 @@ export const ContractsView: React.FC = () => {
       {showAddContract && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Lập hợp đồng thuê lần đầu (UC-HDT-02)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Lập hợp đồng thuê mới</h3>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -423,7 +422,7 @@ export const ContractsView: React.FC = () => {
       {showSignModal && selectedContract && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Ghi nhận hợp đồng đã ký (UC-HDT-04)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Ghi nhận hợp đồng đã ký</h3>
             <p className="text-slate-500">
               Ghi nhận bản giấy đã được hai bên ký tay và khóa nội dung hợp đồng.
             </p>
@@ -473,18 +472,18 @@ export const ContractsView: React.FC = () => {
                 onClick={handleSignContract}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold cursor-pointer"
               >
-                Xác nhận đã ký (HDT-04)
+                Xác nhận đã ký
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ==================== MODAL: RENEWAL CONTRACT HDT-06 ==================== */}
+      {/* ==================== MODAL: RENEWAL CONTRACT ==================== */}
       {showRenewalModal && selectedContract && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Lập hợp đồng nối tiếp (UC-HDT-06)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Lập hợp đồng nối tiếp</h3>
             <p className="text-slate-500">
               Khách tiếp tục thuê cùng phòng. Hợp đồng nối tiếp kế thừa khoản cọc gốc ban đầu, không thu cọc mới.
             </p>
@@ -545,7 +544,7 @@ export const ContractsView: React.FC = () => {
       {showAddBatch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3.5 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Thêm Lịch đợt hợp đồng chung (UC-HDT-01)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Thêm Lịch đợt hợp đồng chung</h3>
 
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Mã đợt (duy nhất) <span className="text-red-500">*</span></label>

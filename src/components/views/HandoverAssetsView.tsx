@@ -53,8 +53,7 @@ export const HandoverAssetsView: React.FC = () => {
       <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Quy trình 02</span>
-            <h1 className="text-lg font-bold text-slate-900">Bàn giao, Kiểm kê & Đối chiếu Tài sản (UC-BG01 → UC-BG11)</h1>
+            <h1 className="text-lg font-bold text-slate-900">Bàn giao, Kiểm kê & Đối chiếu Tài sản</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Quản lý kiểm kê tài sản phòng, biên bản nhận phòng, theo dõi sự cố và quy trình bàn giao trả phòng thực tế.
@@ -67,43 +66,43 @@ export const HandoverAssetsView: React.FC = () => {
             onClick={() => setActiveTab('inventory_bg01')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'inventory_bg01' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Kiểm kê (BG01)
+            Kiểm kê tài sản
           </button>
           <button
             onClick={() => setActiveTab('handover_bg03')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'handover_bg03' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Biên bản nhận (BG03)
+            Biên bản nhận phòng
           </button>
           <button
             onClick={() => setActiveTab('incidents_bg04')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'incidents_bg04' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Sự cố tài sản (BG04/05)
+            Sự cố & Hư hỏng
           </button>
           <button
             onClick={() => setActiveTab('return_bg09')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'return_bg09' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Nhận lại phòng (BG06-09)
+            Nhận lại phòng
           </button>
           <button
             onClick={() => setActiveTab('final_bg11')}
             className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer whitespace-nowrap ${activeTab === 'final_bg11' ? 'bg-white text-slate-900 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Biên bản trả (BG10/11)
+            Biên bản trả phòng
           </button>
         </div>
       </div>
 
-      {/* ==================== TAB 1: INVENTORY BG01 ==================== */}
+      {/* Kiểm kê tài sản phòng */}
       {activeTab === 'inventory_bg01' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-BG01: Kiểm kê tài sản phòng</h2>
+              <h2 className="text-sm font-bold text-slate-800">Kiểm kê tài sản phòng</h2>
               <p className="text-xs text-slate-500">
-                Quản lý 2 trạng thái độc lập: Trạng thái kiểm kê (Nháp / Đã hoàn tất) và Trạng thái liên kết (Chưa liên kết / Đã liên kết) theo BR-UC.BG.01-07.
+                Quản lý trạng thái kiểm kê đồ dùng trang thiết bị và liên kết với hợp đồng thuê phòng tương ứng.
               </p>
             </div>
 
@@ -175,7 +174,7 @@ export const HandoverAssetsView: React.FC = () => {
                     }}
                     className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm cursor-pointer"
                   >
-                    Lưu kiểm kê Đã hoàn tất (UC-BG01)
+                    Lưu kết quả kiểm kê hoàn tất
                   </button>
                 </div>
 
@@ -229,14 +228,14 @@ export const HandoverAssetsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 2: HANDOVER REPORT BG03 ==================== */}
+      {/* Biên bản nhận phòng */}
       {activeTab === 'handover_bg03' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-BG03: Lập biên bản nhận phòng</h2>
+              <h2 className="text-sm font-bold text-slate-800">Biên bản bàn giao nhận phòng</h2>
               <p className="text-xs text-slate-500">
-                Toàn bộ biên bản nhận phòng CHỈ có 3 trạng thái: Nháp / Đã lập / Đã xác nhận (hai bên đã ký giấy ngoài hệ thống).
+                Toàn bộ biên bản nhận phòng có 3 trạng thái: Nháp / Đã lập / Đã xác nhận (hai bên đã ký giấy ngoài hệ thống).
               </p>
             </div>
           </div>
@@ -284,7 +283,7 @@ export const HandoverAssetsView: React.FC = () => {
                 {report.status !== 'Đã xác nhận' && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
                     <span className="text-amber-900">
-                      Biên bản đã lập sẵn sàng ký giấy ngoài hệ thống theo bước 1.07 (Khách ký) và 1.08 (Chủ nhà ký).
+                      Biên bản đã lập sẵn sàng để khách thuê và chủ nhà ký nhận ngoài hệ thống.
                     </span>
                     <button
                       onClick={() => {
@@ -303,14 +302,14 @@ export const HandoverAssetsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 3: ASSET INCIDENTS BG04/05 ==================== */}
+      {/* Sự cố & Hư hỏng */}
       {activeTab === 'incidents_bg04' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-BG04 & UC-BG05: Ghi nhận & Tra cứu sự cố tài sản</h2>
+              <h2 className="text-sm font-bold text-slate-800">Ghi nhận & Tra cứu sự cố tài sản</h2>
               <p className="text-xs text-slate-500">
-                Ghi nhận diễn biến, nguyên nhân, trách nhiệm và chi phí tham khảo; không tự tạo khoản phải thu hay trừ cọc trong UC này.
+                Ghi nhận diễn biến, nguyên nhân, trách nhiệm và chi phí tham khảo tại bước này.
               </p>
             </div>
             <button
@@ -318,7 +317,7 @@ export const HandoverAssetsView: React.FC = () => {
               className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Ghi nhận sự cố mới (UC-BG04)
+              Ghi nhận sự cố mới
             </button>
           </div>
 
@@ -349,21 +348,21 @@ export const HandoverAssetsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 4: RETURN INSPECTION BG06-09 ==================== */}
+      {/* Nhận lại phòng */}
       {activeTab === 'return_bg09' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-BG06 → UC-BG09: Kiểm tra & Nhận lại phòng thực tế</h2>
+              <h2 className="text-sm font-bold text-slate-800">Kiểm tra & Nhận lại phòng thực tế</h2>
               <p className="text-xs text-slate-500">
-                Bước 3.03 kiểm tra; 3.04 ghi nhận Đã/Chưa nhận lại; 3.05 Chủ nhà xác nhận độc lập làm căn cứ duy nhất chuyển phòng Trống.
+                Kiểm tra hiện trạng, chốt chỉ số điện nước và xác nhận bàn giao làm căn cứ chuyển trạng thái phòng.
               </p>
             </div>
             <button
               onClick={() => setShowInspectionModal(true)}
               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm cursor-pointer"
             >
-              Ghi nhận kiểm tra nhận lại phòng (UC-BG09)
+              Ghi nhận kiểm tra nhận lại phòng
             </button>
           </div>
 
@@ -375,11 +374,11 @@ export const HandoverAssetsView: React.FC = () => {
                     <span className="font-bold text-sm text-slate-900">{insp.roomCode}</span>
                     <span className="font-mono text-slate-500">({insp.leaseId})</span>
                     <span className="font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded text-[11px]">
-                      Bước 3.04: {insp.step304Status}
+                      Hiện trạng: {insp.step304Status}
                     </span>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${insp.step305Confirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                    Bước 3.05: {insp.step305Confirmed ? 'Chủ nhà đã xác nhận độc lập' : 'Chờ xác nhận 3.05'}
+                    Xác nhận chủ nhà: {insp.step305Confirmed ? 'Đã xác nhận' : 'Chờ xác nhận'}
                   </span>
                 </div>
 
@@ -399,7 +398,7 @@ export const HandoverAssetsView: React.FC = () => {
                 </div>
 
                 <div className="p-2.5 bg-white border border-slate-200 rounded text-[11px] text-slate-600">
-                  <span className="font-semibold text-slate-800">Chứng cứ xác nhận 3.05:</span>{' '}
+                  <span className="font-semibold text-slate-800">Chứng cứ bàn giao & hiện trạng:</span>{' '}
                   {insp.step305Evidence || 'Chưa cập nhật'}
                 </div>
               </div>
@@ -408,21 +407,21 @@ export const HandoverAssetsView: React.FC = () => {
         </div>
       )}
 
-      {/* ==================== TAB 5: FINAL RETURN REPORT BG10/11 ==================== */}
+      {/* Biên bản trả phòng */}
       {activeTab === 'final_bg11' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-bold text-slate-800">UC-BG10 & UC-BG11: Hoàn thiện biên bản trả phòng</h2>
+              <h2 className="text-sm font-bold text-slate-800">Biên bản bàn giao trả phòng</h2>
               <p className="text-xs text-slate-500">
-                Đồng bộ kết quả quyết toán cọc 5.8 từ Quy trình 05; biên bản trả có 3 trạng thái: Nháp / Đã lập / Đã xác nhận.
+                Tổng hợp kết quả quyết toán cọc và đối chiếu tài sản bàn giao trước khi hoàn tất thủ tục trả phòng.
               </p>
             </div>
           </div>
 
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
             <div className="flex justify-between items-center">
-              <span className="font-bold text-slate-800">Mẫu hồ sơ trả phòng mẫu: Phòng 202 (Đã nhận lại 15/10/2026)</span>
+              <span className="font-bold text-slate-800">Hồ sơ trả phòng: Phòng 202 (Đã nhận lại 15/10/2026)</span>
               <span className="px-2 py-0.5 bg-blue-100 text-blue-800 font-bold rounded text-[11px]">
                 Đã lập (Chuẩn bị ký giấy)
               </span>
@@ -430,15 +429,15 @@ export const HandoverAssetsView: React.FC = () => {
 
             <div className="p-3 bg-white border border-slate-200 rounded-lg space-y-1.5 text-slate-700">
               <div className="flex justify-between">
-                <span>1. Kết quả kiểm tra nhận lại 3.05:</span>
+                <span>1. Kết quả kiểm tra nhận lại:</span>
                 <strong className="text-emerald-700">Đã xác nhận (15/10/2026)</strong>
               </div>
               <div className="flex justify-between">
-                <span>2. Kết quả đối chiếu tài sản BG06/BG07:</span>
+                <span>2. Kết quả đối chiếu tài sản:</span>
                 <strong className="text-emerald-700">Không có chênh lệch tài sản</strong>
               </div>
               <div className="flex justify-between">
-                <span>3. Kết quả quyết toán cọc 5.8 (UC-BG10):</span>
+                <span>3. Kết quả quyết toán tiền cọc:</span>
                 <strong className="text-blue-700">QTC-202-2026 (Hoàn cọc 3.350.000 đ)</strong>
               </div>
             </div>
@@ -446,11 +445,11 @@ export const HandoverAssetsView: React.FC = () => {
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => {
-                  alert('Đã ghi nhận Khách đã ký giấy và Chủ nhà ký giấy xác nhận 3.24. Biên bản chuyển sang Đã xác nhận!');
+                  alert('Đã ghi nhận khách thuê và chủ nhà đã ký giấy xác nhận. Biên bản chuyển sang Đã xác nhận!');
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer"
               >
-                Ghi nhận ký giấy hoàn tất (UC-BG11)
+                Ghi nhận ký giấy hoàn tất
               </button>
             </div>
           </div>
@@ -461,7 +460,7 @@ export const HandoverAssetsView: React.FC = () => {
       {showIncidentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Ghi nhận sự cố tài sản (UC-BG04)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Ghi nhận sự cố tài sản</h3>
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Tài sản liên quan</label>
               <input
@@ -549,7 +548,7 @@ export const HandoverAssetsView: React.FC = () => {
       {showInspectionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-3 text-xs">
-            <h3 className="font-bold text-slate-900 text-base">Ghi nhận kết quả nhận lại phòng (UC-BG09)</h3>
+            <h3 className="font-bold text-slate-900 text-base">Ghi nhận kết quả nhận lại phòng</h3>
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Phòng bàn giao trả</label>
               <select
@@ -623,12 +622,12 @@ export const HandoverAssetsView: React.FC = () => {
                       condition: 'Bình thường'
                     }))
                   });
-                  alert('Ghi nhận kết quả nhận lại phòng thành công (Đã xác nhận 3.05). Bạn có thể vào UC-PH-08 để cập nhật phòng sang trạng thái Trống!');
+                  alert('Ghi nhận kết quả nhận lại phòng thành công! Bạn có thể chuyển sang mục Quản lý phòng để cập nhật phòng sang trạng thái Trống.');
                   setShowInspectionModal(false);
                 }}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
               >
-                Lưu & Xác nhận 3.05 (UC-BG09)
+                Lưu & Xác nhận bàn giao nhận lại
               </button>
             </div>
           </div>

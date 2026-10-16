@@ -4,6 +4,7 @@ import {
   UtilityPriceHistory,
   BankAccountConfig,
   Room,
+  RoomHistoryLog,
   Asset,
   InventoryRecord,
   HandoverCondition,
@@ -25,7 +26,11 @@ import {
   PaymentReceipt,
   DebtHistoryReminder,
   DebtPromise,
-  SecurityAuditLog
+  SecurityAuditLog,
+  MissingConditionLog,
+  UnfinishedHandoverLog,
+  InitialPaymentRecord,
+  LeaseStartEvent
 } from '../types';
 
 export const INITIAL_USERS: UserAccount[] = [
@@ -931,5 +936,153 @@ export const INITIAL_SETTLEMENT_SLIPS: DepositSettlementSlip[] = [
     step58Published: false,
     createdAt: '2026-10-15T16:30:00Z',
     updatedAt: '2026-10-15T17:10:00Z'
+  }
+];
+
+export const INITIAL_ROOM_HISTORY: RoomHistoryLog[] = [
+  {
+    id: 'rl_init_1',
+    roomCode: 'P.101',
+    field: 'Khởi tạo phòng',
+    oldValue: '—',
+    newValue: 'Khởi tạo phòng mới: Tầng 1, 28 m² (Trạng thái: Trống)',
+    changedBy: 'Nguyễn Văn An (Chủ nhà)',
+    changedAt: '2026-08-15 08:30:00'
+  },
+  {
+    id: 'rl_init_2',
+    roomCode: 'P.101',
+    field: 'Ghi chú',
+    oldValue: 'Phòng ban đầu chưa trang bị thêm tủ lạnh',
+    newValue: 'Đã bổ sung tủ lạnh mini và bàn làm việc',
+    changedBy: 'Nguyễn Văn An (Chủ nhà)',
+    changedAt: '2026-08-20 14:15:00'
+  },
+  {
+    id: 'rl_init_3',
+    roomCode: 'P.102',
+    field: 'Khởi tạo phòng',
+    oldValue: '—',
+    newValue: 'Khởi tạo phòng mới: Tầng 1, 30 m² (Trạng thái: Trống)',
+    changedBy: 'Nguyễn Văn An (Chủ nhà)',
+    changedAt: '2026-04-10 09:00:00'
+  },
+  {
+    id: 'rl_init_4',
+    roomCode: 'P.202',
+    field: 'Diện tích',
+    oldValue: '28 m²',
+    newValue: '30 m²',
+    changedBy: 'Nguyễn Văn An (Chủ nhà)',
+    changedAt: '2026-09-01 10:45:00'
+  },
+  {
+    id: 'rl_init_5',
+    roomCode: 'P.301',
+    field: 'Khởi tạo phòng',
+    oldValue: '—',
+    newValue: 'Khởi tạo phòng mới: Tầng 3, 26 m² (Trạng thái: Trống)',
+    changedBy: 'Nguyễn Văn An (Chủ nhà)',
+    changedAt: '2026-06-01 08:00:00'
+  }
+];
+
+export const INITIAL_INITIAL_PAYMENT_RECORDS: InitialPaymentRecord[] = [
+  {
+    id: 'pay07_101',
+    contractId: 'HD-101-2026',
+    roomCode: 'P.101',
+    leaseId: 'THUE-101-L1',
+    depositAmount: 3500000,
+    firstMonthRentAmount: 3500000,
+    actualAmount: 7000000,
+    receivedDate: '2026-08-30',
+    transactionCode: 'FT260830112233',
+    bankAccountReceived: 'MB Bank - 0988123456 (NGUYEN VAN AN)',
+    proofFile: 'unc_chuyen_khoan_mb_101.jpg',
+    depositCode: 'COC-101-L1',
+    rentPeriodNote: 'Kỳ 09/2026',
+    confirmedBy: 'Nguyễn Văn An (Chủ nhà)',
+    confirmedAt: '2026-08-30T10:15:00Z'
+  },
+  {
+    id: 'pay07_102',
+    contractId: 'HD-102-2026',
+    roomCode: 'P.102',
+    leaseId: 'THUE-102-L1',
+    depositAmount: 3600000,
+    firstMonthRentAmount: 3600000,
+    actualAmount: 7200000,
+    receivedDate: '2026-04-28',
+    transactionCode: 'FT260428889911',
+    bankAccountReceived: 'MB Bank - 0988123456 (NGUYEN VAN AN)',
+    proofFile: 'unc_chuyen_khoan_mb_102.jpg',
+    depositCode: 'COC-102-L1',
+    rentPeriodNote: 'Kỳ 05/2026',
+    confirmedBy: 'Nguyễn Văn An (Chủ nhà)',
+    confirmedAt: '2026-04-28T15:20:00Z'
+  },
+  {
+    id: 'pay07_303',
+    contractId: 'HD-303-2026',
+    roomCode: 'P.303',
+    leaseId: 'THUE-303-L1',
+    depositAmount: 3700000,
+    firstMonthRentAmount: 3700000,
+    actualAmount: 7400000,
+    receivedDate: '2026-10-15',
+    transactionCode: 'FT261015998877',
+    bankAccountReceived: 'MB Bank - 0988123456 (NGUYEN VAN AN)',
+    proofFile: 'unc_mb_303_7tr4.jpg',
+    depositCode: 'COC-303-L1',
+    rentPeriodNote: 'Kỳ 10/2026',
+    confirmedBy: 'Nguyễn Văn An (Chủ nhà)',
+    confirmedAt: '2026-10-15T11:00:00Z'
+  }
+];
+
+export const INITIAL_MISSING_CONDITION_LOGS: MissingConditionLog[] = [
+  {
+    id: 'mc_303_1',
+    roomCode: 'P.303',
+    contractId: 'HD-303-2026',
+    leaseId: 'THUE-303-L1',
+    missingContractEffect: true,
+    missingHandover: true,
+    notes: 'Đã thu đủ 1 cọc 1 thuê tại UC-PH-07. Đang chờ khách hẹn ngày 18/10/2026 để bàn giao thực tế và ký biên bản nhận phòng UC-BG03.',
+    loggedBy: 'Nguyễn Văn An (Chủ nhà)',
+    loggedAt: '2026-10-15T11:30:00Z',
+    status: 'Đang theo dõi'
+  }
+];
+
+export const INITIAL_UNFINISHED_HANDOVER_LOGS: UnfinishedHandoverLog[] = [
+  {
+    id: 'ufh_302_1',
+    roomCode: 'P.302',
+    leaseId: 'THUE-302-L1',
+    contractId: 'HD-302-2026',
+    handoverVersion: 'v1.0',
+    step304Status: 'Chưa nhận lại',
+    notFinishedIndicator: 'Chưa kết thúc thuê',
+    reason: 'Khách còn đồ đạc cá nhân chưa dọn hết và cần đối soát lại công nợ quá hạn kỳ 09/2026',
+    obstacleContent: 'Tủ quần áo còn quần áo, chưa bàn giao lại thẻ từ cổng; hẹn thứ Bảy quay lại dọn nốt.',
+    loggedBy: 'Nguyễn Văn An (Chủ nhà)',
+    loggedAt: '2026-10-14T16:00:00Z'
+  }
+];
+
+export const INITIAL_LEASE_START_EVENTS: LeaseStartEvent[] = [
+  {
+    eventId: 'evt_lease_start_101',
+    roomCode: 'P.101',
+    contractId: 'HD-101-2026',
+    leaseId: 'THUE-101-L1',
+    checkInDate: '2026-09-01',
+    handoverReportId: 'BB-101-2026',
+    handoverVersion: 'v1.0',
+    emittedAt: '2026-09-01T09:30:00Z',
+    coTenantsChecked: true,
+    syncStatus: 'Đã gửi HSKT-02'
   }
 ];

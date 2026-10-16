@@ -119,23 +119,22 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onNavigateToNotices }) =
       <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">Mục 0.2</span>
             <h1 className="text-lg font-bold text-slate-900">Cấu hình Đơn giá & Tài khoản Ngân hàng</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý đơn giá điện, nước, phí dịch vụ cố định (UC-CH-01) và tài khoản nhận thanh toán chuyển khoản duy nhất (UC-CH-02).
+            Quản lý đơn giá điện, nước, danh mục phí dịch vụ cố định và tài khoản nhận thanh toán chuyển khoản duy nhất.
           </p>
         </div>
       </div>
 
-      {/* Grid of 2 Use Cases */}
+      {/* Grid of Configurations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* ==================== UC-CH-01: ĐƠN GIÁ ĐIỆN NƯỚC & DỊCH VỤ ==================== */}
+        {/* Đơn giá điện nước & dịch vụ */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-bold text-slate-800">UC-CH-01: Đơn giá Điện, Nước & Dịch vụ</h2>
+              <h2 className="text-sm font-bold text-slate-800">Đơn giá Điện, Nước & Dịch vụ</h2>
             </div>
             <span className="text-[11px] font-mono text-slate-500">Kỳ: {effectivePeriod}</span>
           </div>
@@ -197,7 +196,6 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onNavigateToNotices }) =
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Phí dịch vụ cố định (tính theo phòng/kỳ)
                 </span>
-                <span className="text-[11px] text-slate-400">BR-UC.CH.01-03</span>
               </div>
 
               <div className="space-y-2 mb-3">
@@ -281,12 +279,12 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onNavigateToNotices }) =
           </form>
         </div>
 
-        {/* ==================== UC-CH-02: TÀI KHOẢN NGÂN HÀNG NHẬN TIỀN ==================== */}
+        {/* Tài khoản ngân hàng nhận tiền */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Landmark className="w-4 h-4 text-indigo-600" />
-              <h2 className="text-sm font-bold text-slate-800">UC-CH-02: Tài khoản Ngân hàng Nhận Tiền</h2>
+              <h2 className="text-sm font-bold text-slate-800">Tài khoản Ngân hàng Nhận Tiền</h2>
             </div>
             <span className="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Duy nhất 1 tài khoản áp dụng
@@ -338,7 +336,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onNavigateToNotices }) =
                     onClick={onNavigateToNotices}
                     className="text-xs text-blue-700 font-semibold underline block cursor-pointer"
                   >
-                    Xem danh sách thông báo cần phát hành lại QR tại UC07.2 →
+                    Xem danh sách thông báo cần phát hành lại mã QR →
                   </button>
                 )}
               </div>

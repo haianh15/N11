@@ -125,15 +125,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen }) => {
           </div>
           <p className="text-xs text-slate-300">
             {activeTab === 'login' && 'Đăng nhập vào hệ thống để quản lý căn hộ'}
-            {activeTab === 'first_change' && 'Bắt buộc đổi mật khẩu lần đầu (AF-01)'}
-            {activeTab === 'forgot' && 'Quên mật khẩu – Khôi phục qua Email (UC-TK-04)'}
+            {activeTab === 'first_change' && 'Bắt buộc đổi mật khẩu mới cho lần đầu đăng nhập'}
+            {activeTab === 'forgot' && 'Khôi phục mật khẩu qua Email xác thực'}
             {activeTab === 'reset_token' && 'Đặt lại mật khẩu mới từ liên kết'}
           </p>
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {/* TAB 1: LOGIN (UC-TK-01) */}
+          {/* TAB 1: LOGIN */}
           {activeTab === 'login' && (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
@@ -189,7 +189,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen }) => {
                 >
                   Quên mật khẩu?
                 </button>
-                <span className="text-slate-400 text-[11px]">Tự khóa 15p nếu sai 5 lần</span>
+                <span className="text-slate-400 text-[11px]">Tự khóa 15 phút nếu sai 5 lần</span>
               </div>
 
               <button
@@ -199,9 +199,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen }) => {
                 Đăng nhập
               </button>
 
-              {/* Demo quick credential helper */}
+              {/* Quick credential helper */}
               <div className="mt-4 pt-4 border-t border-slate-100 text-[11px] text-slate-500 space-y-1 bg-slate-50 p-2.5 rounded-lg">
-                <div className="font-semibold text-slate-700">Tài khoản mẫu để kiểm thử theo đặc tả:</div>
+                <div className="font-semibold text-slate-700">Tài khoản đăng nhập mẫu:</div>
                 <div className="flex justify-between items-center">
                   <span>Chủ nhà: <strong>admin</strong> / <code>Admin@12345678</code></span>
                   <button
@@ -213,7 +213,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen }) => {
                   </button>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Quản lý (đổi pass lần đầu): <strong>quanly01</strong> / <code>CapSan@123456</code></span>
+                  <span>Quản lý: <strong>quanly01</strong> / <code>CapSan@123456</code></span>
                   <button
                     type="button"
                     onClick={() => { setUsername('quanly01'); setPassword('CapSan@123456'); }}
